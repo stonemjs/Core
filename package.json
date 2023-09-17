@@ -1,0 +1,65 @@
+{
+  "name": "@noowow-community/core",
+  "version": "0.0.1",
+  "description": "Vanilla Javascript core foundation",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "typings": "./dist/index.d.ts",
+  "repository": "git@github.com:noowow-community/core.git",
+  "author": "Mr Stone <pierre.evens16@gmail.com>",
+  "license": "MIT",
+  "files": [
+    "/dist"
+  ],
+  "keywords": [
+    "Core",
+    "Noowow"
+  ],
+  "homepage": "https://github.com/noowow-community/core#readme",
+  "bugs": {
+    "url": "https://github.com/noowow-community/core/issues"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      }
+    }
+  },
+  "scripts": {
+    "lint": "eslint src --ext mjs",
+    "lint:test": "eslint tests --ext mjs",
+    "lint:fix": "eslint --fix --ext mjs src/ tests/",
+    "release": "yarn build && npm publish",
+    "build": "yarn lint && webpack --env prod",
+    "build:dev": "yarn lint && webpack --env dev",
+    "test": "yarn lint:test && mocha --experimental-modules --no-warnings test/**/*.spec.mjs"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.15.8",
+    "@babel/eslint-parser": "^7.22.15",
+    "@babel/plugin-transform-class-properties": "^7.22.5",
+    "@babel/plugin-transform-object-rest-spread": "^7.22.15",
+    "@babel/plugin-transform-private-methods": "^7.22.5",
+    "@babel/preset-env": "^7.15.8",
+    "babel-loader": "^8.2.2",
+    "chai": "^4.3.4",
+    "clean-webpack-plugin": "^4.0.0",
+    "copy-webpack-plugin": "^11.0.0",
+    "deepmerge": "^4.3.1",
+    "eslint": "^7.12.1",
+    "eslint-config-standard": "^16.0.3",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^5.1.0",
+    "mocha": "^9.1.3",
+    "webpack": "^5.58.2",
+    "webpack-cli": "^4.9.0"
+  },
+  "dependencies": {}
+}
