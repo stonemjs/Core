@@ -9,17 +9,27 @@ import { Terminating } from "./events/Terminating.mjs"
 import { Booting } from "./events/booting.mjs"
 import { Container } from "@noowow-community/service-container"
 import { LogicException } from "./exceptions/LogicException.mjs"
+import { SettingUp } from "./events/SettingUp.mjs"
+import { Setup } from "./events/Setup.mjs"
 
 export class Application {
-  #providers
+  #env
+  #kernels
   #container
+  #providers
+  #launchers
   #eventManager
   #providerInstances
+  #currentLauncherName
 
   constructor ({ providers }) {
-    this.#container = new Container()
+    this.#env = new Map()
+    this.#kernels = new Map()
+    this.#launchers = new Map()
     this.#providers = providers ?? []
+    this.#container = new Container()
     this.#providerInstances = new Set()
+    this.#currentLauncherName = 'default'
     this.#eventManager = new EventManager()
   }
 
@@ -39,9 +49,45 @@ export class Application {
     return this.#eventManager.subscribe(eventType, callback)
   }
 
+  addKernel (key, kernel) {
+    this.#kernels.set(key, kernel)
+    return this
+  }
+
+  hasKernel (key) {
+    return this.#kernels.has(key)
+  }
+
+  getKernel (key) {
+    return this.#kernels.get(key)
+  }
+
+  addLauncher (key, launcher) {
+    this.#launchers.set(key, launcher)
+    return this
+  }
+
+  hasLauncher (key) {
+    return this.#launchers.has(key)
+  }
+
+  getLauncher (key, launcher) {
+    return this.#launchers.get(key, launcher)
+  }
+
+  getCurrentLauncher () {
+    if (this.hasLauncher(this.#currentLauncherName)) {
+      const launcher = this.getLauncher(this.#currentLauncherName)
+      if (launcher.launch) {
+        return launcher
+      }
+      throw new LogicException(`Launcher must have a launch method`)
+    }
+    throw new LogicException(`No launcher exist with this name ${this.#currentLauncherName}`)
+  }
+
   async run () {
-    await this.#init()
-    await this.#setup()
+    this.#setup()
     await this.#register()
     await this.#boot()
     await this.#start()
@@ -60,23 +106,16 @@ export class Application {
       this.#makeProvider(ProviderClass)
     }
   }
-
-  async #init () {
-    this.#makeProviders()
-    for (const provider of this.#providerInstances) {
-      if (provider.init) {
-        await provider.init()
-      }
-    }
-    return this
-  }
   
-  async #setup () {
-    for (const provider of this.#providerInstances) {
-      if (provider.setup) {
-        await provider.setup()
-      }
-    }
+  #setup () {
+    this.#eventManager.notify(SettingUp, new SettingUp(this))
+    this.#eventManager.notify('app.settingUp', new SettingUp(this))
+    
+    this.#makeProviders()
+    
+    this.#eventManager.notify(Setup, new Setup(this))
+    this.#eventManager.notify('app.setup', new Setup(this))
+
     return this
   }
   
@@ -114,9 +153,11 @@ export class Application {
     return this
   }
   
-  #start () {
+  async #start () {
     this.#eventManager.notify(Starting, new Starting(this))
     this.#eventManager.notify('app.starting', new Starting(this))
+
+    await this.getCurrentLauncher().launch()
 
     this.#eventManager.notify(Started, new Started(this))
     this.#eventManager.notify('app.started', new Started(this))
