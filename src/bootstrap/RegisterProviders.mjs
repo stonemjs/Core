@@ -1,5 +1,5 @@
 export class RegisterProviders {
   bootstrap ({ app }) {
-    app.registerConfiguredProviders()
+    return app.register()
   }
 }

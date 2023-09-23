@@ -1,5 +1,5 @@
 export class BootProviders {
   bootstrap ({ app }) {
-    app.boot()
+    return app.boot()
   }
 }

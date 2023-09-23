@@ -1,55 +1,39 @@
 import { RequestHandled } from '../events/RequestHandled.mjs'
+import { DefaultKernel } from './DefaultKernel.mjs'
 
-export class HttpKernel {
+export class HttpKernel extends DefaultKernel {
   static NAME = 'http'
 
-  #app
-  #router
-  #startedAt
   #middleware
-  #middlewareAliases
 
-  constructor ({ app, router }) {
-    this.#app = app
-    this.#router = router
-    this.#middleware = []
+  #getMiddleware () {
+    return this.app.configurations.middleware ?? []
   }
 
-  async handle (request) {
-    let response
-    this.#startedAt = new Date().getTime()
+  #getResolveMiddleware () {
+    this.#middleware ??= this.#getMiddleware().reduce((prev, curr) => prev.concat([this.app.resolveService(curr)]), [])
+    return this.#middleware
+  }
 
-    try {
-      response = await this.#sendRequestThroughRouter(request)
-    } catch (error) {
-      this.#reportException()
-      response = this.#renderException(request, error)
+  async _beforeRunning () {
+    let request = this.app.get('request')
+    for (const middleware of this.#getResolveMiddleware()) {
+      request = (await middleware.handleRequest(request)) ?? request
     }
 
-    this.#app.notify(RequestHandled, new RequestHandled(request, response))
+    this.app.registerInstance('request', request)
+
+    return request
+  }
+
+  async _afterRunning (response) {
+    response = super._afterRunning(response)
+    for (const middleware of this.#getResolveMiddleware()) {
+      response = (await middleware.handleResponse(response)) ?? response
+    }
+
+    this.app.notify(RequestHandled, new RequestHandled(this.app.get('request'), response))
 
     return response
   }
-
-  bootstrap () {}
-
-  terminate (request, response) {}
-
-  getApplication () {
-    return this.#app
-  }
-
-  async #sendRequestThroughRouter (request) {
-    this.#app.container.instance('request', request)
-
-    this.bootstrap()
-
-    const response = await this.#router.dispatch(request)
-
-    return response
-  }
-
-  #renderException (request, error) {}
-
-  #reportException () {}
 }

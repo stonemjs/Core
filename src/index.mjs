@@ -1,6 +1,5 @@
 export { Application } from './Application.mjs'
 export { EventManager } from './EventManager.mjs'
-export { Provider } from './decorator/provider.mjs'
 export { Booted } from './events/Booted.mjs'
 export { LocaleUpdated } from './events/LocaleUpdated.mjs'
 export { Registered } from './events/Registered.mjs'

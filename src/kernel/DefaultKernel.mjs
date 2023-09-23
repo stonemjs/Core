@@ -1,5 +1,4 @@
 import { BootProviders } from '../bootstrap/BootProviders.mjs'
-import { LoadEnvironmentVariables } from '../bootstrap/LoadEnvironmentVariables.mjs'
 import { RegisterProviders } from '../bootstrap/RegisterProviders.mjs'
 import { LogicException } from '../exceptions/LogicException.mjs'
 
@@ -15,10 +14,13 @@ export class DefaultKernel {
     this.#app = app
 
     this.#bootstrappers = [
-      LoadEnvironmentVariables,
       RegisterProviders,
       BootProviders
     ]
+  }
+
+  get app () {
+    return this.#app
   }
 
   get executionDuration () {
@@ -39,16 +41,19 @@ export class DefaultKernel {
         throw new LogicException('The app must have a run method')
       }
 
+      let response
+
       try {
         await this.bootstrap()
-        const response = await app.run()
-        this.#endedAt = Date.now()
-        return response
+        await this._beforeRunning()
+        response = await app.run()
       } catch (error) {
-        console.log('Error:', error)
-        this.#endedAt = Date.now()
-        return { error }
+        response = { error }
       }
+
+      this.#endedAt = Date.now()
+
+      return await this._afterRunning(response)
     }
 
     throw new LogicException('The app must be a Class or a function')
@@ -62,6 +67,16 @@ export class DefaultKernel {
 
   terminate () {
     return this.#app.terminate()
+  }
+
+  async _beforeRunning () {}
+
+  async _afterRunning (response) {
+    if (response.error) {
+      console.log('Error:', response.error)
+    }
+
+    return response
   }
 
   #isFunction (value) {

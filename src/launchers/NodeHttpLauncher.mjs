@@ -27,11 +27,12 @@ export class NodeHttpLauncher {
   }
 
   async launch () {
-    return new Promise((resolve) => {
+    return new Promise((resolve, reject) => {
       http
         .createServer(async (req, res) => {
           const request = await Request.createFromNodeRequest(req, this.#server)
           this.#app.registerInstance(Request, request)
+          this.#app.registerInstance('originalRequest', request)
           const response = await this.kernel.run()
           res.writeHead(response.statusCode, response.headers)
           response.isEmpty() ? res.end() : res.end(response.getContent())
@@ -44,6 +45,7 @@ export class NodeHttpLauncher {
             console.log('Server started at:', this.#server.baseUrl)
           }
         )
+        .once('error', e => reject(e))
     })
   }
 }
