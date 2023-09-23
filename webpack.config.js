@@ -1,7 +1,6 @@
 const path = require('path')
 const CopyPlugin = require('copy-webpack-plugin')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
-const NodePolyfillPlugin = require('node-polyfill-webpack-plugin')
 
 module.exports = (env) => {
   return {
@@ -9,7 +8,6 @@ module.exports = (env) => {
     entry: path.resolve(__dirname, './src/index.mjs'),
     devtool: env.dev && 'inline-source-map',
     plugins: [
-      new NodePolyfillPlugin(),
       new CleanWebpackPlugin(),
       new CopyPlugin({
         patterns: [
@@ -21,7 +19,7 @@ module.exports = (env) => {
       libraryTarget: 'umd',
       filename: 'index.js',
       globalObject: 'this',
-      library: 'NoowowCore',
+      library: 'StoneJsCore',
       path: path.resolve(__dirname, 'dist'),
     },
     module: {

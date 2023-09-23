@@ -1,7 +1,10 @@
-export class LogicException extends Error {
+import { ApplicationException } from './ApplicationException.mjs'
+
+export class LogicException extends ApplicationException {
+  static CODE = 500
+
   constructor (message) {
-    super()
-    this.message = message
-    this.name = 'noowow.core'
+    super(LogicException.CODE, message)
+    this.name = 'stonejs.core.logic'
   }
 }

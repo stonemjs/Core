@@ -1,6 +1,6 @@
 import { Application } from '@noowow-community/core'
 
-export const stoneJS = Application
+const stoneJS = await Application
   .default()
   .registerInstance('name', 'Evens Stone')
   .registerService(({ name }) => name, true, ['myName'])
@@ -8,10 +8,9 @@ export const stoneJS = Application
     return {
       run () {
         console.log('Hello: ', myName)
+        return (event, ctx) => [event, ctx]
       }
     }
   })
-  .then(app => {
-    console.log('App container', app.container.bindings.size)
-    console.log('App container aliases', app.container.aliases.size)
-  })
+
+console.log('App result', stoneJS('eventMe', 'CTXMe'))

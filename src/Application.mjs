@@ -12,8 +12,9 @@ import { LogicException } from './exceptions/LogicException.mjs'
 import { SettingUp } from './events/SettingUp.mjs'
 import { Setup } from './events/Setup.mjs'
 import { LocaleUpdated } from './events/LocaleUpdated.mjs'
-import { DefaultKernel } from './kernel/DefaultKernel.mjs'
-import { DefaultLauncher } from './launchers/DefaultLauncher.mjs'
+import { Kernel } from './Kernel.mjs'
+import { Launcher } from './Launcher.mjs'
+import { ApplicationException } from './exceptions/ApplicationException.mjs'
 
 export class Application {
   static VERSION = '0.0.1'
@@ -86,16 +87,6 @@ export class Application {
     return this
   }
 
-  get kernel () {
-    const kernel = this.#configurations.kernel ?? 'default'
-
-    if (this.hasResolvedKernel(kernel)) {
-      return this.getResolvedKernel(kernel)
-    }
-
-    throw new LogicException(`No kernel registered for this name ${kernel}`)
-  }
-
   addKernel (key, kernel) {
     this.#configurations.kernels ??= {}
     this.#configurations.kernels[key] = kernel
@@ -110,24 +101,31 @@ export class Application {
     return this.#configurations.kernels?.[key]
   }
 
+  setKernel (key) {
+    if (this.hasKernel(key)) {
+      this.#configurations.kernel = key
+      return this
+    }
+
+    throw new LogicException(`No kernel registered with this name ${key}`)
+  }
+
+  get kernel () {
+    const kernel = this.#configurations.kernel ?? 'default'
+
+    if (this.hasResolvedKernel(kernel)) {
+      return this.getResolvedKernel(kernel)
+    }
+
+    throw new LogicException(`No kernel resolved with this name ${kernel}`)
+  }
+
   hasResolvedKernel (key) {
     return this.#kernels.has(key)
   }
 
   getResolvedKernel (key) {
     return this.#kernels.get(key)
-  }
-
-  get launcher () {
-    const name = this.#configurations.launcher ?? 'default'
-    if (this.hasResolvedLauncher(name)) {
-      const launcher = this.getResolvedLauncher(name)
-      if (launcher.launch) {
-        return launcher
-      }
-      throw new LogicException('Launcher must have a launch method')
-    }
-    throw new LogicException(`No launcher exist with this name ${name}`)
   }
 
   addLauncher (key, launcher) {
@@ -142,6 +140,27 @@ export class Application {
 
   getLauncher (key) {
     return this.#configurations.launchers?.[key]
+  }
+
+  get launcher () {
+    const name = this.#configurations.launcher ?? 'default'
+    if (this.hasResolvedLauncher(name)) {
+      const launcher = this.getResolvedLauncher(name)
+      if (launcher.launch) {
+        return launcher
+      }
+      throw new LogicException('Launcher must have a launch method')
+    }
+    throw new LogicException(`No launcher exist with this name ${name}`)
+  }
+
+  setLauncher (key) {
+    if (this.hasLauncher(key)) {
+      this.#configurations.launcher = key
+      return this
+    }
+
+    throw new LogicException(`No launcher registered with this name ${key}`)
   }
 
   hasResolvedLauncher (key) {
@@ -174,17 +193,18 @@ export class Application {
   }
 
   setup () {
-    this.#eventManager.notify(SettingUp, new SettingUp(this))
-    this.#eventManager.notify('app.settingUp', new SettingUp(this))
+    this.notify(SettingUp, new SettingUp(this))
+    this.notify('app.settingUp', new SettingUp(this))
 
     this
       .#makeKernels()
       .#makeLaunchers()
       .#makeProviders()
       .#makeBootstrappers()
+      .#makeConfigurations()
 
-    this.#eventManager.notify(Setup, new Setup(this))
-    this.#eventManager.notify('app.setup', new Setup(this))
+    this.notify(Setup, new Setup(this))
+    this.notify('app.setup', new Setup(this))
 
     return this
   }
@@ -209,13 +229,13 @@ export class Application {
   }
 
   async start () {
-    this.#eventManager.notify(Starting, new Starting(this))
-    this.#eventManager.notify('app.starting', new Starting(this))
+    this.notify(Starting, new Starting(this))
+    this.notify('app.starting', new Starting(this))
 
     const response = await this.launcher.launch()
 
-    this.#eventManager.notify(Started, new Started(this))
-    this.#eventManager.notify('app.started', new Started(this))
+    this.notify(Started, new Started(this, response))
+    this.notify('app.started', new Started(this, response))
 
     return response
   }
@@ -225,8 +245,16 @@ export class Application {
   }
 
   async terminate () {
-    this.#eventManager.notify(Terminating, new Terminating(this))
-    this.#eventManager.notify('app.terminating', new Terminating(this))
+    this.notify(Terminating, new Terminating(this))
+    this.notify('app.terminating', new Terminating(this))
+
+    if (this.kernel.terminate) {
+      await this.kernel.terminate()
+    }
+
+    if (this.launcher.terminate) {
+      await this.launcher.terminate()
+    }
 
     for (const provider of this.#providers) {
       if (provider.terminate) {
@@ -234,12 +262,8 @@ export class Application {
       }
     }
 
-    if (this.launcher.stop) {
-      await this.launcher.stop()
-    }
-
-    this.#eventManager.notify(Terminate, new Terminate(this))
-    this.#eventManager.notify('app.terminate', new Terminate(this))
+    this.notify(Terminate, new Terminate(this))
+    this.notify('app.terminate', new Terminate(this))
 
     this.clear()
 
@@ -267,8 +291,8 @@ export class Application {
       return this.#providers.get(provider)
     }
 
-    this.#eventManager.notify(Registering, new Registering({ app: this, provider }))
-    this.#eventManager.notify('app.registering', new Registering({ app: this, provider }))
+    this.notify(Registering, new Registering(this, provider))
+    this.notify('app.registering', new Registering(this, provider))
 
     if (provider.register) {
       await provider.register()
@@ -282,22 +306,22 @@ export class Application {
       this.bootProvider(provider)
     }
 
-    this.#eventManager.notify(Registered, new Registered({ app: this, provider }))
-    this.#eventManager.notify('app.registered', new Registered({ app: this, provider }))
+    this.notify(Registered, new Registered(this, provider))
+    this.notify('app.registered', new Registered(this, provider))
 
     return this
   }
 
   async bootProvider (provider) {
-    this.#eventManager.notify(Booting, new Booting({ app: this, provider }))
-    this.#eventManager.notify('app.booting', new Booting({ app: this, provider }))
+    this.notify(Booting, new Booting(this, provider))
+    this.notify('app.booting', new Booting(this, provider))
 
     if (provider.boot) {
       await provider.boot()
     }
 
-    this.#eventManager.notify(Booted, new Booted({ app: this, provider }))
-    this.#eventManager.notify('app.booted', new Booted({ app: this, provider }))
+    this.notify(Booted, new Booted(this, provider))
+    this.notify('app.booted', new Booted(this, provider))
 
     return this
   }
@@ -321,6 +345,7 @@ export class Application {
   setLocale (locale) {
     this.instance('app.locale', locale)
     this.events.notify(LocaleUpdated, new LocaleUpdated(locale))
+    this.events.notify('locale.updated', new LocaleUpdated(locale))
     return this
   }
 
@@ -342,21 +367,19 @@ export class Application {
   }
 
   abort (code, message, metadata = {}) {
-    this.kernel.abort(code, message, metadata)
-  }
-
-  shouldSkipMiddleware () {
-    return this.get('app.middleware.disable') === true
+    throw new ApplicationException(code, message, metadata)
   }
 
   clear () {
-    super.clear()
+    this.#container.clear()
+    this.#eventManager.clear()
 
     this.#booted = false
     this.#kernels = new Map()
     this.#providers = new Set()
     this.#launchers = new Map()
     this.#hasBeenBootstrapped = false
+    this.#registeredProviders = new Set()
   }
 
   #markAsRegistered (provider) {
@@ -387,12 +410,17 @@ export class Application {
     return this
   }
 
-  #makeBootstrappers () {
-    const bootstrappers = []
-      .concat(this.#configurations.bootstrappers ?? [], this.kernel.bootstrappers)
-      .reduce((prev, curr) => prev.concat(prev.includes(curr) ? [] : [curr]), [])
+  #makeConfigurations () {
+    this.registerInstance('app.debug', this.#configurations?.debug ?? false)
+    this.registerInstance('app.locale', this.#configurations?.locale ?? 'en')
+    this.registerInstance('app.env', this.#configurations?.env ?? 'production')
+    this.registerInstance('app.fallback_locale', this.#configurations?.fallback_locale ?? 'en')
 
-    for (const Class of bootstrappers) {
+    return this
+  }
+
+  #makeBootstrappers () {
+    for (const Class of this.kernel.bootstrappers) {
       this.registerService(Class)
     }
 
@@ -408,26 +436,24 @@ export class Application {
   }
 
   #makeKernels () {
-    for (const kernel of this.#configurations.kernels ?? []) {
-      const [name, Class] = Object.entries(kernel)
+    for (const [name, Class] of Object.entries(this.#configurations.kernels ?? {})) {
       this.#kernels.set(name, this.resolveService(Class))
     }
 
     if (!this.#kernels.has('default')) {
-      this.#kernels.set('default', this.resolveService(DefaultKernel))
+      this.#kernels.set('default', this.resolveService(Kernel))
     }
 
     return this
   }
 
   #makeLaunchers () {
-    for (const launcher of this.#configurations.launchers ?? []) {
-      const [name, Class] = Object.entries(launcher)
+    for (const [name, Class] of Object.entries(this.#configurations.launchers ?? {})) {
       this.#launchers.set(name, this.resolveService(Class))
     }
 
     if (!this.#launchers.has('default')) {
-      this.#launchers.set('default', this.resolveService(DefaultLauncher))
+      this.#launchers.set('default', this.resolveService(Launcher))
     }
 
     return this
