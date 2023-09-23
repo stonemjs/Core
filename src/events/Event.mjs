@@ -1,6 +1,5 @@
 export class Event {
-  constructor (app, provider = null) {
+  constructor (app) {
     this.app = app
-    this.provider = provider
   }
 }

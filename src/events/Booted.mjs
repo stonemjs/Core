@@ -1,3 +1,3 @@
-import { Event } from './Event.mjs'
+import { ProviderEvent } from './ProviderEvent.mjs'
 
-export class Booted extends Event {}
+export class Booted extends ProviderEvent {}

@@ -7,7 +7,7 @@
 node_modules/
 dist/
 public/
-noowow-community-core-*
+stone-js-core-*
 
 # Compiled Java class files
 *.class
