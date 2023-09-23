@@ -37,7 +37,7 @@ export class DefaultKernel {
       this.#startedAt = Date.now()
       const app = this.#isArrowFunction(App) ? App(this.#app.container) : new App(this.#app.container)
 
-      if (!app.run) {
+      if (!app?.run) {
         throw new LogicException('The app must have a run method')
       }
 
@@ -72,7 +72,7 @@ export class DefaultKernel {
   async _beforeRunning () {}
 
   async _afterRunning (response) {
-    if (response.error) {
+    if (response?.error) {
       console.log('Error:', response.error)
     }
 

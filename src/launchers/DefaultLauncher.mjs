@@ -5,7 +5,8 @@ export class DefaultLauncher {
     this.#app = app
   }
 
-  launch () {
-    return this.#app.kernel.run()
+  async launch () {
+    await this.#app.kernel.run()
+    return this.#app
   }
 }

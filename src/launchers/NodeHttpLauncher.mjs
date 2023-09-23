@@ -41,7 +41,7 @@ export class NodeHttpLauncher {
           this.#server.port,
           this.#server.hostname,
           () => {
-            resolve()
+            resolve(this.#app)
             console.log('Server started at:', this.#server.baseUrl)
           }
         )

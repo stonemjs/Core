@@ -29,7 +29,7 @@ export class Application {
   #registeredProviders
   #hasBeenBootstrapped
 
-  constructor ({ configurations = {} }) {
+  constructor (configurations = null) {
     this.#booted = false
     this.#kernels = new Map()
     this.#launchers = new Map()
@@ -39,6 +39,10 @@ export class Application {
     this.#configurations = configurations ?? {}
 
     this.#registerBaseBindings()
+  }
+
+  static default (configurations) {
+    return new this(configurations)
   }
 
   get version () {
@@ -83,9 +87,9 @@ export class Application {
   }
 
   get kernel () {
-    const kernel = this.configurations.kernel ?? 'default'
+    const kernel = this.#configurations.kernel ?? 'default'
 
-    if (this.hasKernel(kernel)) {
+    if (this.hasResolvedKernel(kernel)) {
       return this.getResolvedKernel(kernel)
     }
 
@@ -93,8 +97,8 @@ export class Application {
   }
 
   addKernel (key, kernel) {
-    this.configurations.kernels ??= {}
-    this.configurations.kernels[key] = kernel
+    this.#configurations.kernels ??= {}
+    this.#configurations.kernels[key] = kernel
     return this
   }
 
@@ -103,7 +107,11 @@ export class Application {
   }
 
   getKernel (key) {
-    return this.configurations.kernels?.[key]
+    return this.#configurations.kernels?.[key]
+  }
+
+  hasResolvedKernel (key) {
+    return this.#kernels.has(key)
   }
 
   getResolvedKernel (key) {
@@ -111,8 +119,8 @@ export class Application {
   }
 
   get launcher () {
-    const name = this.configurations.launcher ?? 'default'
-    if (this.hasLauncher(name)) {
+    const name = this.#configurations.launcher ?? 'default'
+    if (this.hasResolvedLauncher(name)) {
       const launcher = this.getResolvedLauncher(name)
       if (launcher.launch) {
         return launcher
@@ -123,8 +131,8 @@ export class Application {
   }
 
   addLauncher (key, launcher) {
-    this.configurations.launchers ??= {}
-    this.configurations.launchers[key] = launcher
+    this.#configurations.launchers ??= {}
+    this.#configurations.launchers[key] = launcher
     return this
   }
 
@@ -133,7 +141,11 @@ export class Application {
   }
 
   getLauncher (key) {
-    return this.configurations.launchers?.[key]
+    return this.#configurations.launchers?.[key]
+  }
+
+  hasResolvedLauncher (key) {
+    return this.#launchers.has(key)
   }
 
   getResolvedLauncher (key) {
@@ -239,7 +251,7 @@ export class Application {
 
     for (const bootstrapper of bootstrappers) {
       this.notify(`bootstrapping:${bootstrapper.name}`, this.#container)
-      await this.make(bootstrapper).bootstrap(this.#container)
+      await this.#container.make(bootstrapper).bootstrap(this.#container)
       this.notify(`bootstrapped:${bootstrapper.name}`, this.#container)
     }
 
@@ -364,7 +376,13 @@ export class Application {
       .instance('events', this.#eventManager)
       .instance(EventManager, this.#eventManager)
 
-    this.#userDefinedApp = () => console.log('Hello world!')
+    this.#userDefinedApp = () => {
+      return {
+        run () {
+          console.log('Hello world!')
+        }
+      }
+    }
 
     return this
   }
@@ -382,7 +400,7 @@ export class Application {
   }
 
   #makeProviders () {
-    for (const Class of this.#configurations.providers) {
+    for (const Class of this.#configurations.providers ?? []) {
       this.#providers.add(this.resolveService(Class))
     }
 
@@ -390,7 +408,7 @@ export class Application {
   }
 
   #makeKernels () {
-    for (const kernel of this.#configurations.kernels) {
+    for (const kernel of this.#configurations.kernels ?? []) {
       const [name, Class] = Object.entries(kernel)
       this.#kernels.set(name, this.resolveService(Class))
     }
@@ -403,7 +421,7 @@ export class Application {
   }
 
   #makeLaunchers () {
-    for (const launcher of this.#configurations.launchers) {
+    for (const launcher of this.#configurations.launchers ?? []) {
       const [name, Class] = Object.entries(launcher)
       this.#launchers.set(name, this.resolveService(Class))
     }
