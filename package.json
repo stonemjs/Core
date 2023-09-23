@@ -4,7 +4,8 @@
   "description": "StoneJS core foundation",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
-  "typings": "./dist/index.d.ts",
+  "types": "./dist/index.d.mts",
+  "typings": "./dist/index.d.mts",
   "repository": "git@github.com:noowow-community/core.git",
   "author": "Mr Stone <pierre.evens16@gmail.com>",
   "license": "MIT",
@@ -22,22 +23,23 @@
   "exports": {
     ".": {
       "import": {
-        "types": "./dist/index.d.ts",
+        "types": "./dist/index.d.mts",
         "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/index.d.ts",
+        "types": "./dist/index.d.mts",
         "default": "./dist/index.js"
       }
     }
   },
   "scripts": {
+    "types": "tsc",
     "lint": "eslint src --ext mjs",
     "lint:test": "eslint tests --ext mjs",
     "lint:fix": "eslint --fix --ext mjs src/ tests/",
     "release": "yarn build && npm publish",
-    "build": "yarn lint && webpack --env prod",
-    "build:dev": "yarn lint && webpack --env dev",
+    "build": "yarn lint && webpack --env prod && yarn types",
+    "build:dev": "yarn lint && webpack --env dev && yarn types",
     "test": "yarn lint:test && mocha --experimental-modules --no-warnings test/**/*.spec.mjs"
   },
   "devDependencies": {
@@ -54,6 +56,7 @@
     "eslint-plugin-node": "^11.1.0",
     "eslint-plugin-promise": "^5.1.0",
     "mocha": "^10.2.0",
+    "typescript": "^5.2.2",
     "webpack": "^5.88.2",
     "webpack-cli": "^5.1.4"
   }

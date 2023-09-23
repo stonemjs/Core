@@ -24,7 +24,8 @@ export class EventManager {
   }
 
   clear () {
-    this.#listeners = new Map()
+    this.#listeners.clear()
+    return this
   }
 
   #addCallback (eventType, callback) {

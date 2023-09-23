@@ -1,5 +1,4 @@
 const path = require('path')
-const CopyPlugin = require('copy-webpack-plugin')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
 
 module.exports = (env) => {
@@ -8,12 +7,7 @@ module.exports = (env) => {
     entry: path.resolve(__dirname, './src/index.mjs'),
     devtool: env.dev && 'inline-source-map',
     plugins: [
-      new CleanWebpackPlugin(),
-      new CopyPlugin({
-        patterns: [
-          { from: './index.d.ts' },
-        ],
-      }),
+      new CleanWebpackPlugin()
     ],
     output: {
       libraryTarget: 'umd',

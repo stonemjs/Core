@@ -6,7 +6,7 @@ import { Started } from './events/Started.mjs'
 import { Starting } from './events/Starting.mjs'
 import { Terminate } from './events/Terminate.mjs'
 import { Terminating } from './events/Terminating.mjs'
-import { Booting } from './events/booting.mjs'
+import { Booting } from './events/Booting.mjs'
 import { Container } from '@noowow-community/service-container'
 import { LogicException } from './exceptions/LogicException.mjs'
 import { SettingUp } from './events/SettingUp.mjs'
@@ -16,6 +16,10 @@ import { Kernel } from './Kernel.mjs'
 import { Launcher } from './Launcher.mjs'
 import { ApplicationException } from './exceptions/ApplicationException.mjs'
 
+/**
+ * Class representing an Application.
+ * @version 0.0.1
+ */
 export class Application {
   static VERSION = '0.0.1'
 
@@ -30,6 +34,10 @@ export class Application {
   #registeredProviders
   #hasBeenBootstrapped
 
+  /**
+   * Create an application.
+   * @param {object} configurations - The application configurations.
+   */
   constructor (configurations = null) {
     this.#booted = false
     this.#kernels = new Map()
@@ -42,10 +50,20 @@ export class Application {
     this.#registerBaseBindings()
   }
 
+  /**
+   * Create a default instance of application.
+   * @param {object} configurations - The application configurations.
+   * @return {Application} An Application object.
+   * @static
+   */
   static default (configurations) {
     return new this(configurations)
   }
 
+  /**
+   * Get application's version.
+   * @return {string} The version.
+   */
   get version () {
     return Application.VERSION
   }
@@ -71,11 +89,13 @@ export class Application {
   }
 
   on (eventType, callback) {
-    return this.#eventManager.subscribe(eventType, callback)
+    this.#eventManager.subscribe(eventType, callback)
+    return this
   }
 
   notify (eventType, data) {
     this.#eventManager.notify(eventType, data)
+    return this
   }
 
   app (userDefinedApp) {
