@@ -1,23 +1,23 @@
-import { BootProviders } from "../bootstrap/BootProviders.mjs"
-import { LoadEnvironmentVariables } from "../bootstrap/LoadEnvironmentVariables.mjs"
-import { RegisterProviders } from "../bootstrap/RegisterProviders.mjs"
-import { LogicException } from "../exceptions/LogicException.mjs"
+import { BootProviders } from '../bootstrap/BootProviders.mjs'
+import { LoadEnvironmentVariables } from '../bootstrap/LoadEnvironmentVariables.mjs'
+import { RegisterProviders } from '../bootstrap/RegisterProviders.mjs'
+import { LogicException } from '../exceptions/LogicException.mjs'
 
 export class DefaultKernel {
   static NAME = 'default'
-  
+
   #app
   #endedAt
   #startedAt
   #bootstrappers
-  
+
   constructor ({ app }) {
     this.#app = app
 
     this.#bootstrappers = [
       LoadEnvironmentVariables,
       RegisterProviders,
-      BootProviders,
+      BootProviders
     ]
   }
 

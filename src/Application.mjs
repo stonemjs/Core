@@ -1,19 +1,19 @@
-import { Booted } from "./events/Booted.mjs"
-import { EventManager } from "./EventManager.mjs"
-import { Registered } from "./events/Registered.mjs"
-import { Registering } from "./events/Registering.mjs"
-import { Started } from "./events/Started.mjs"
-import { Starting } from "./events/Starting.mjs"
-import { Terminate } from "./events/Terminate.mjs"
-import { Terminating } from "./events/Terminating.mjs"
-import { Booting } from "./events/booting.mjs"
-import { Container } from "@noowow-community/service-container"
-import { LogicException } from "./exceptions/LogicException.mjs"
-import { SettingUp } from "./events/SettingUp.mjs"
-import { Setup } from "./events/Setup.mjs"
-import { LocaleUpdated } from "./events/LocaleUpdated.mjs"
-import { DefaultKernel } from "./kernel/DefaultKernel.mjs"
-import { DefaultLauncher } from "./launchers/DefaultLauncher.mjs"
+import { Booted } from './events/Booted.mjs'
+import { EventManager } from './EventManager.mjs'
+import { Registered } from './events/Registered.mjs'
+import { Registering } from './events/Registering.mjs'
+import { Started } from './events/Started.mjs'
+import { Starting } from './events/Starting.mjs'
+import { Terminate } from './events/Terminate.mjs'
+import { Terminating } from './events/Terminating.mjs'
+import { Booting } from './events/booting.mjs'
+import { Container } from '@noowow-community/service-container'
+import { LogicException } from './exceptions/LogicException.mjs'
+import { SettingUp } from './events/SettingUp.mjs'
+import { Setup } from './events/Setup.mjs'
+import { LocaleUpdated } from './events/LocaleUpdated.mjs'
+import { DefaultKernel } from './kernel/DefaultKernel.mjs'
+import { DefaultLauncher } from './launchers/DefaultLauncher.mjs'
 
 export class Application {
   static VERSION = '0.0.1'
@@ -30,7 +30,6 @@ export class Application {
   #hasBeenBootstrapped
 
   constructor ({ configurations = {} }) {
-    super()
     this.#booted = false
     this.#kernels = new Map()
     this.#launchers = new Map()
@@ -65,7 +64,7 @@ export class Application {
   get (key, fallback = null) {
     return this.#container.bound(key) ? this.#container.make(key) : fallback
   }
- 
+
   on (eventType, callback) {
     return this.#eventManager.subscribe(eventType, callback)
   }
@@ -85,7 +84,7 @@ export class Application {
 
   get kernel () {
     const kernel = this.configurations.kernel ?? 'default'
-    
+
     if (this.hasKernel(kernel)) {
       return this.getResolvedKernel(kernel)
     }
@@ -118,7 +117,7 @@ export class Application {
       if (launcher.launch) {
         return launcher
       }
-      throw new LogicException(`Launcher must have a launch method`)
+      throw new LogicException('Launcher must have a launch method')
     }
     throw new LogicException(`No launcher exist with this name ${name}`)
   }
@@ -161,17 +160,17 @@ export class Application {
       .setup()
       .start()
   }
-  
+
   setup () {
     this.#eventManager.notify(SettingUp, new SettingUp(this))
     this.#eventManager.notify('app.settingUp', new SettingUp(this))
-    
+
     this
       .#makeKernels()
       .#makeLaunchers()
       .#makeProviders()
       .#makeBootstrappers()
-    
+
     this.#eventManager.notify(Setup, new Setup(this))
     this.#eventManager.notify('app.setup', new Setup(this))
 
@@ -184,7 +183,7 @@ export class Application {
     }
     return this
   }
-  
+
   async boot () {
     if (this.#booted) return
 
@@ -196,7 +195,7 @@ export class Application {
 
     return this
   }
-  
+
   async start () {
     this.#eventManager.notify(Starting, new Starting(this))
     this.#eventManager.notify('app.starting', new Starting(this))
@@ -205,14 +204,14 @@ export class Application {
 
     this.#eventManager.notify(Started, new Started(this))
     this.#eventManager.notify('app.started', new Started(this))
-    
+
     return response
   }
 
   stop () {
     return this.terminate()
   }
-  
+
   async terminate () {
     this.#eventManager.notify(Terminating, new Terminating(this))
     this.#eventManager.notify('app.terminating', new Terminating(this))
@@ -226,10 +225,10 @@ export class Application {
     if (this.launcher.stop) {
       await this.launcher.stop()
     }
-    
+
     this.#eventManager.notify(Terminate, new Terminate(this))
     this.#eventManager.notify('app.terminate', new Terminate(this))
-    
+
     this.clear()
 
     return this
@@ -237,7 +236,7 @@ export class Application {
 
   async bootstrapWith (bootstrappers) {
     this.#hasBeenBootstrapped = true
-    
+
     for (const bootstrapper of bootstrappers) {
       this.notify(`bootstrapping:${bootstrapper.name}`, this.#container)
       await this.make(bootstrapper).bootstrap(this.#container)
@@ -250,7 +249,7 @@ export class Application {
   providerIsRegistered (Provider) {
     return this.#registeredProviders.has(Provider.constructor.name)
   }
-  
+
   async registerProvider (provider, force = false) {
     if (this.#providers.has(provider) && !force) {
       return this.#providers.get(provider)
@@ -258,7 +257,7 @@ export class Application {
 
     this.#eventManager.notify(Registering, new Registering({ app: this, provider }))
     this.#eventManager.notify('app.registering', new Registering({ app: this, provider }))
-    
+
     if (provider.register) {
       await provider.register()
     } else {
@@ -270,7 +269,7 @@ export class Application {
     if (this.#booted) {
       this.bootProvider(provider)
     }
-    
+
     this.#eventManager.notify(Registered, new Registered({ app: this, provider }))
     this.#eventManager.notify('app.registered', new Registered({ app: this, provider }))
 
@@ -284,7 +283,7 @@ export class Application {
     if (provider.boot) {
       await provider.boot()
     }
-    
+
     this.#eventManager.notify(Booted, new Booted({ app: this, provider }))
     this.#eventManager.notify('app.booted', new Booted({ app: this, provider }))
 
@@ -340,7 +339,7 @@ export class Application {
 
   clear () {
     super.clear()
-    
+
     this.#booted = false
     this.#kernels = new Map()
     this.#providers = new Set()
@@ -374,7 +373,7 @@ export class Application {
     const bootstrappers = []
       .concat(this.#configurations.bootstrappers ?? [], this.kernel.bootstrappers)
       .reduce((prev, curr) => prev.concat(prev.includes(curr) ? [] : [curr]), [])
-    
+
     for (const Class of bootstrappers) {
       this.registerService(Class)
     }

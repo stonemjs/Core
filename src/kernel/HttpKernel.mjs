@@ -1,14 +1,14 @@
-import { RequestHandled } from "../events/RequestHandled.mjs"
+import { RequestHandled } from '../events/RequestHandled.mjs'
 
 export class HttpKernel {
   static NAME = 'http'
-  
+
   #app
   #router
   #startedAt
   #middleware
   #middlewareAliases
-  
+
   constructor ({ app, router }) {
     this.#app = app
     this.#router = router
@@ -25,14 +25,13 @@ export class HttpKernel {
       this.#reportException()
       response = this.#renderException(request, error)
     }
-    
+
     this.#app.notify(RequestHandled, new RequestHandled(request, response))
 
     return response
   }
 
   bootstrap () {}
-
 
   terminate (request, response) {}
 
@@ -44,7 +43,7 @@ export class HttpKernel {
     this.#app.container.instance('request', request)
 
     this.bootstrap()
-    
+
     const response = await this.#router.dispatch(request)
 
     return response
