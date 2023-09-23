@@ -9,7 +9,7 @@ export class NodeHttpLauncher {
     this.#app = app
   }
 
-  #getKernel () {
+  get kernel () {
     if (this.#app.hasKernel(this.#kernel)) {
       return this.#app.getKernel(this.#kernel)
     }
@@ -38,7 +38,7 @@ export class NodeHttpLauncher {
     return http
       .createServer(async (req, res) => {
         const request = await Request.createFromNodeRequest(req, this.#server)
-        const response = await this.#getKernel.dispatch(request)
+        const response = await this.kernel.dispatch(request)
         res.writeHead(response.statusCode, response.headers)
         response.isEmpty() ? res.end() : res.end(response.getContent())
       })

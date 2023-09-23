@@ -19,5 +19,5 @@
     "rules": {
         "indent": ["error", 2]
     },
-    "parser": "babel-eslint"
+    "parser": "@babel/eslint-parser"
 }

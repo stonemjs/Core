@@ -1,8 +1,20 @@
 export class EventManager {
   #listeners = new Map()
 
-  subscribe (eventType, callback) {
-    this.#listeners.set(eventType, this.#addCallback(eventType, callback))
+  subscribe (events, callback) {
+    events = Array.isArray(events) ? events : [events]
+    for (const eventType of events) {
+      this.#listeners.set(eventType, this.#addCallback(eventType, callback))
+    }
+    return this
+  }
+
+  hasSubscriber (eventType) {
+    return this.#listeners.has(eventType)
+  }
+
+  notify (eventType, data) {
+    this.#getCallbacksByEventType(eventType).forEach(callback => callback(data))
     return this
   }
 
@@ -11,9 +23,8 @@ export class EventManager {
     return this
   }
 
-  notify (eventType, data) {
-    this.#getCallbacksByEventType(eventType).forEach(callback => callback(data))
-    return this
+  clear () {
+    this.#listeners = new Map()
   }
 
   #addCallback (eventType, callback) {
