@@ -18,7 +18,9 @@ import { ApplicationException } from './exceptions/ApplicationException.mjs'
 
 /**
  * Class representing an Application.
+ * 
  * @version 0.0.1
+ * @author Mr. Stone <pierre.evens16@gmail.com>
  */
 export class Application {
   static VERSION = '0.0.1'
@@ -36,7 +38,8 @@ export class Application {
 
   /**
    * Create an application.
-   * @param {object} configurations - The application configurations.
+   * 
+   * @param {Object} configurations - The application configurations.
    */
   constructor (configurations = null) {
     this.#booted = false
@@ -52,7 +55,8 @@ export class Application {
 
   /**
    * Create a default instance of application.
-   * @param {object} configurations - The application configurations.
+   * 
+   * @param  {Object} configurations - The application configurations.
    * @return {Application} An Application object.
    * @static
    */
@@ -387,7 +391,7 @@ export class Application {
   }
 
   abort (code, message, metadata = {}) {
-    throw new ApplicationException(code, message, metadata)
+    throw new ApplicationException(message, code, metadata)
   }
 
   clear () {

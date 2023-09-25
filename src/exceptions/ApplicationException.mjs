@@ -1,10 +1,12 @@
 export class ApplicationException extends Error {
-  constructor (code, message, metadata = {}) {
+  static CODE = 'CORE-500'
+
+  constructor (message, code = ApplicationException.CODE, metadata = {}) {
     super()
     this.code = code
     this.message = message
     this.metadata = metadata
-    this.name = 'stonejs.core.application'
+    this.name = 'stonejs.core'
   }
 
   getResponse () {
