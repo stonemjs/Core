@@ -13,7 +13,7 @@ module.exports = (env) => {
       libraryTarget: 'umd',
       filename: 'index.js',
       globalObject: 'this',
-      library: 'StoneJsCore',
+      library: 'StoneJSCore',
       path: path.resolve(__dirname, 'dist'),
     },
     module: {

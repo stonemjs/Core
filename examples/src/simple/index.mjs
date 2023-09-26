@@ -1,4 +1,4 @@
-import { Application, Booted, Started } from '@noowow-community/core'
+import { Application, Booted, Started } from '@stone-js/core'
 
 const stoneJS = await Application
   .default()

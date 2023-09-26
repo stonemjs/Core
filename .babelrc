@@ -5,5 +5,12 @@
         "node": "current"
       }
     }]
-  ]
+  ],
+  "env": {
+    "test": {
+      "plugins": [
+        "istanbul"
+      ]
+    }
+  }
 }

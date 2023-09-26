@@ -9,6 +9,10 @@ dist/
 public/
 stone-js-core-*
 
+# Istanbul Code coverage
+coverage
+.nyc_output
+
 # Compiled Java class files
 *.class
 
