@@ -7,7 +7,6 @@ import { Starting } from './events/Starting.mjs'
 import { Terminate } from './events/Terminate.mjs'
 import { Terminating } from './events/Terminating.mjs'
 import { Booting } from './events/Booting.mjs'
-import { Container } from '@noowow-community/service-container'
 import { LogicException } from './exceptions/LogicException.mjs'
 import { SettingUp } from './events/SettingUp.mjs'
 import { Setup } from './events/Setup.mjs'
@@ -15,10 +14,11 @@ import { LocaleUpdated } from './events/LocaleUpdated.mjs'
 import { Kernel } from './Kernel.mjs'
 import { Launcher } from './Launcher.mjs'
 import { ApplicationException } from './exceptions/ApplicationException.mjs'
+import { Container } from '@stone-js/service-container'
 
 /**
  * Class representing an Application.
- * 
+ *
  * @version 0.0.1
  * @author Mr. Stone <pierre.evens16@gmail.com>
  */
@@ -38,7 +38,7 @@ export class Application {
 
   /**
    * Create an application.
-   * 
+   *
    * @param {Object} configurations - The application configurations.
    */
   constructor (configurations = null) {
@@ -55,7 +55,7 @@ export class Application {
 
   /**
    * Create a default instance of application.
-   * 
+   *
    * @param  {Object} configurations - The application configurations.
    * @return {Application} An Application object.
    * @static
