@@ -1,3 +1,5 @@
 import { ProviderEvent } from './ProviderEvent.mjs'
 
-export class Registered extends ProviderEvent {}
+export class Registered extends ProviderEvent {
+  static get alias () { return 'app.registered' }
+}

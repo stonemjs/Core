@@ -201,7 +201,7 @@ export class Application {
 
   setup () {
     this.emit(SettingUp, new SettingUp(this))
-    this.emit('app.settingUp', new SettingUp(this))
+    this.emit(SettingUp.alias, new SettingUp(this))
 
     this
       .#makeKernels()
@@ -210,7 +210,7 @@ export class Application {
       .#makeConfigurations()
 
     this.emit(Setup, new Setup(this))
-    this.emit('app.setup', new Setup(this))
+    this.emit(Setup.alias, new Setup(this))
 
     return this
   }
@@ -236,12 +236,12 @@ export class Application {
 
   async start () {
     this.emit(Starting, new Starting(this))
-    this.emit('app.starting', new Starting(this))
+    this.emit(Starting.alias, new Starting(this))
 
     const output = await this.kernel.run()
 
     this.emit(Started, new Started(this, output))
-    this.emit('app.started', new Started(this, output))
+    this.emit(Started.alias, new Started(this, output))
 
     return output
   }
@@ -252,7 +252,7 @@ export class Application {
 
   async terminate () {
     this.emit(Terminating, new Terminating(this))
-    this.emit('app.terminating', new Terminating(this))
+    this.emit(Terminating.alias, new Terminating(this))
 
     if (this.kernel.terminate) {
       await this.kernel.terminate()
@@ -265,7 +265,7 @@ export class Application {
     }
 
     this.emit(Terminate, new Terminate(this))
-    this.emit('app.terminate', new Terminate(this))
+    this.emit(Terminate.alias, new Terminate(this))
 
     this.clear()
 
@@ -294,7 +294,7 @@ export class Application {
     }
 
     this.emit(Registering, new Registering(this, provider))
-    this.emit('app.registering', new Registering(this, provider))
+    this.emit(Registering.alias, new Registering(this, provider))
 
     if (provider.register) {
       await provider.register()
@@ -309,7 +309,7 @@ export class Application {
     }
 
     this.emit(Registered, new Registered(this, provider))
-    this.emit('app.registered', new Registered(this, provider))
+    this.emit(Registered.alias, new Registered(this, provider))
 
     return this
   }
@@ -318,12 +318,12 @@ export class Application {
     if (!provider.boot) return this
 
     this.emit(Booting, new Booting(this, provider))
-    this.emit('app.booting', new Booting(this, provider))
+    this.emit(Booting.alias, new Booting(this, provider))
 
     await provider.boot()
 
     this.emit(Booted, new Booted(this, provider))
-    this.emit('app.booted', new Booted(this, provider))
+    this.emit(Booted.alias, new Booted(this, provider))
 
     return this
   }
@@ -347,7 +347,7 @@ export class Application {
   setLocale (locale) {
     this.instance('app.locale', locale)
     this.emit(LocaleUpdated, new LocaleUpdated(locale))
-    this.emit('locale.updated', new LocaleUpdated(locale))
+    this.emit(LocaleUpdated.alias, new LocaleUpdated(locale))
     return this
   }
 
