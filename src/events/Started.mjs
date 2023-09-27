@@ -1,8 +1,8 @@
 import { Event } from './Event.mjs'
 
 export class Started extends Event {
-  constructor (app, response) {
+  constructor (app, output) {
     super(app)
-    this.response = response
+    this.output = output
   }
 }

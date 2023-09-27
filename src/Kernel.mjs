@@ -37,19 +37,19 @@ export class Kernel {
         throw new LogicException('The app must have a `run` method')
       }
 
-      let response
+      let output
 
       try {
         await this.bootstrap()
         await this._beforeRunning()
-        response = await this.#resolvedUserApp.run()
+        output = await this.#resolvedUserApp.run()
       } catch (error) {
-        response = error
+        output = error
       }
 
       this.#endedAt = Date.now()
 
-      return await this._afterRunning(response)
+      return await this._afterRunning(output)
     }
 
     throw new LogicException('The app must be a Class or a function')
@@ -69,12 +69,12 @@ export class Kernel {
 
   async _beforeRunning () {}
 
-  async _afterRunning (response) {
-    if (response?.error && this.#app.isDebug()) {
-      console.log('Error:', response)
+  async _afterRunning (output) {
+    if (output?.error && this.#app.isDebug()) {
+      console.log('Error:', output)
     }
 
-    return response
+    return output
   }
 
   _isFunction (value) {

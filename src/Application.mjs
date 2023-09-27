@@ -1,5 +1,5 @@
 import { Booted } from './events/Booted.mjs'
-import { EventManager } from './EventManager.mjs'
+import { EventEmitter } from './EventEmitter.mjs'
 import { Registered } from './events/Registered.mjs'
 import { Registering } from './events/Registering.mjs'
 import { Started } from './events/Started.mjs'
@@ -29,7 +29,7 @@ export class Application {
   #kernels
   #container
   #providers
-  #eventManager
+  #eventEmitter
   #configurations
   #userDefinedApp
   #registeredProviders
@@ -54,7 +54,7 @@ export class Application {
   /**
    * Launch the application with a specific launcher.
    *
-   * @param  {Object} configurations - The application configurations.
+   * @param  {Object} [configurations={}] - The application configurations.
    * @return {any}
    * @static
    */
@@ -98,7 +98,7 @@ export class Application {
   }
 
   get events () {
-    return this.#eventManager
+    return this.#eventEmitter
   }
 
   get hasBeenBootstrapped () {
@@ -113,13 +113,18 @@ export class Application {
     return this.#container.bound(key) ? this.#container.make(key) : fallback
   }
 
-  on (eventType, callback) {
-    this.#eventManager.subscribe(eventType, callback)
+  on (eventName, listener) {
+    this.#eventEmitter.on(eventName, listener)
     return this
   }
 
-  emit (eventType, data) {
-    this.#eventManager.emit(eventType, data)
+  emit (eventName, ...data) {
+    this.#eventEmitter.emit(eventName, ...data)
+    return this
+  }
+
+  removeListener (eventName, listener) {
+    this.#eventEmitter.removeListener(eventName, listener)
     return this
   }
 
@@ -233,12 +238,12 @@ export class Application {
     this.emit(Starting, new Starting(this))
     this.emit('app.starting', new Starting(this))
 
-    const response = await this.kernel.run()
+    const output = await this.kernel.run()
 
-    this.emit(Started, new Started(this, response))
-    this.emit('app.started', new Started(this, response))
+    this.emit(Started, new Started(this, output))
+    this.emit('app.started', new Started(this, output))
 
-    return response
+    return output
   }
 
   stop () {
@@ -300,7 +305,7 @@ export class Application {
     this.#markAsRegistered(provider)
 
     if (this.#booted) {
-      this.bootProvider(provider)
+      await this.bootProvider(provider)
     }
 
     this.emit(Registered, new Registered(this, provider))
@@ -310,12 +315,12 @@ export class Application {
   }
 
   async bootProvider (provider) {
+    if (!provider.boot) return this
+
     this.emit(Booting, new Booting(this, provider))
     this.emit('app.booting', new Booting(this, provider))
 
-    if (provider.boot) {
-      await provider.boot()
-    }
+    await provider.boot()
 
     this.emit(Booted, new Booted(this, provider))
     this.emit('app.booted', new Booted(this, provider))
@@ -355,12 +360,12 @@ export class Application {
   }
 
   setFallbackLocale (locale) {
-    this.instance('app.fallback_locale', locale)
+    this.instance('app.fallbackLocale', locale)
     return this
   }
 
   getFallbackLocale () {
-    return this.get('app.fallback_locale', 'en')
+    return this.get('app.fallbackLocale', 'en')
   }
 
   abort (code, message, metadata = {}) {
@@ -369,7 +374,7 @@ export class Application {
 
   clear () {
     this.#container.clear()
-    this.#eventManager.clear()
+    this.#eventEmitter.removeAllListeners()
 
     this.#booted = false
     this.#kernels = new Map()
@@ -385,14 +390,14 @@ export class Application {
 
   #registerBaseBindings () {
     this.#container = new Container()
-    this.#eventManager = new EventManager()
+    this.#eventEmitter = new EventEmitter()
 
     this
       .#container
       .instance('app', this)
       .instance(Container, this.#container)
-      .instance('events', this.#eventManager)
-      .instance(EventManager, this.#eventManager)
+      .instance('events', this.#eventEmitter)
+      .instance(EventEmitter, this.#eventEmitter)
 
     this.#userDefinedApp = () => {
       return {
@@ -411,7 +416,7 @@ export class Application {
       .registerInstance('app.debug', this.#configurations?.debug ?? false)
       .registerInstance('app.locale', this.#configurations?.locale ?? 'en')
       .registerInstance('app.env', this.#configurations?.env ?? 'production')
-      .registerInstance('app.fallback_locale', this.#configurations?.fallback_locale ?? 'en')
+      .registerInstance('app.fallbackLocale', this.#configurations?.fallbackLocale ?? 'en')
 
     return this
   }

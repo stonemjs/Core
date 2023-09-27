@@ -1,5 +1,8 @@
 import { ApplicationException } from './ApplicationException.mjs'
 
+/**
+ * Class representing a LogicException.
+ */
 export class LogicException extends ApplicationException {
   static CODE = 'CORE_LOGIC-500'
 

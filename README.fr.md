@@ -115,7 +115,22 @@ You can use it for any purpose,
   }
 ```
 
-## List of events
+## Evenements
 
-All the events are located in the events folder, you can use the event class as event name to s
-Tous les evenements
+Tous les evenements sont localisés dans le repertoire `events`, vous pouvez utiliser les class comme nom pour abonner à vos evenements.
+
+### Liste des evenement ainsi que leur alias
+
+| Evenements         |  Alias             |
+|--------------------|--------------------|
+| SettingUp          | app.settingUp      |
+| Setup              | app.setup          |
+| Registering        | app.registering    |
+| Registered         | app.registered     |
+| Booting            | app.booting        |
+| Booted             | app.booted         |
+| Starting           | app.starting       |
+| Started            | app.started        |
+| Terminating        | app.terminating    |
+| Terminate          | app.terminate      |
+| LocaleUpdated      | app.localeUpdated  |
