@@ -27,7 +27,7 @@ export class Kernel {
   }
 
   async run () {
-    const App = this.#app.userDefinedApp
+    const App = this.#app.guestApp
 
     if (this._isFunction(App)) {
       await this.bootstrap()
@@ -72,10 +72,6 @@ export class Kernel {
   async _beforeRunning () {}
 
   async _afterRunning (output) {
-    if (output?.error && this.#app.isDebug()) {
-      console.log('Error:', output)
-    }
-
     return output
   }
 

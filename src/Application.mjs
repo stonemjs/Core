@@ -29,10 +29,10 @@ export class Application {
   #booted
   #kernels
   #context
+  #guestApp
   #providers
   #container
   #eventEmitter
-  #userDefinedApp
   #registeredProviders
   #hasBeenBootstrapped
 
@@ -45,9 +45,9 @@ export class Application {
     this.#booted = false
     this.#kernels = new Map()
     this.#providers = new Set()
+    this.#context = context ?? {}
     this.#hasBeenBootstrapped = false
     this.#registeredProviders = new Set()
-    this.#context = context ?? {}
 
     this.#registerBaseBindings()
   }
@@ -60,17 +60,16 @@ export class Application {
    * @static
    */
   static launch (context = {}) {
-    const config = typeof context === 'function'
-      ? { userDefinedApp: context }
+    context = typeof context === 'function'
+      ? { app: context }
       : (context ?? {})
 
-    config.launcher ??= 'default'
-    config.userDefinedApp ??= config.app
-    const LauncherClass = config.launchers?.[config.launcher] ?? config.launchers?.default ?? Launcher
+    context.launcher ??= 'default'
+    const LauncherClass = context.launchers?.[context.launcher] ?? context.launchers?.default ?? Launcher
     const launcher = new LauncherClass()
 
     if (launcher.launch) {
-      return launcher.launch(this, config)
+      return launcher.launch(this, context)
     }
 
     throw new LogicException('Launcher must have a launch method')
@@ -111,8 +110,8 @@ export class Application {
     return this.#hasBeenBootstrapped
   }
 
-  get userDefinedApp () {
-    return this.#userDefinedApp
+  get guestApp () {
+    return this.#guestApp
   }
 
   get logger () {
@@ -138,12 +137,12 @@ export class Application {
     return this
   }
 
-  app (userDefinedApp) {
-    return this.setApp(userDefinedApp)
+  app (guestApp) {
+    return this.setApp(guestApp)
   }
 
-  setApp (userDefinedApp) {
-    this.#userDefinedApp = userDefinedApp ?? this.#userDefinedApp
+  setApp (guestApp) {
+    this.#guestApp = guestApp ?? this.#guestApp
     return this
   }
 
@@ -202,9 +201,9 @@ export class Application {
     return this
   }
 
-  run (userDefinedApp = null) {
+  run (guestApp = null) {
     return this
-      .setApp(userDefinedApp)
+      .setApp(guestApp)
       .setup()
       .start()
   }
@@ -414,7 +413,7 @@ export class Application {
       .instance('logger.default', console)
       .autoBinding(this.#context.exceptionHandler ?? ExceptionHandler)
 
-    this.#userDefinedApp = () => {
+    this.#guestApp = () => {
       return {
         run () {
           console.log('Hello world!')
@@ -497,7 +496,7 @@ export class Application {
 
   #makeContextItems () {
     return this
-      .setApp(this.#context.userDefinedApp)
+      .setApp(this.#context.app)
       .registerInstance('app.debug', this.#context?.debug ?? false)
       .registerInstance('app.locale', this.#context?.locale ?? 'en')
       .registerInstance('app.env', this.#context?.env ?? 'production')
