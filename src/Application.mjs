@@ -29,7 +29,6 @@ export class Application {
   #kernels
   #container
   #providers
-  #launchers
   #eventManager
   #configurations
   #userDefinedApp
@@ -44,7 +43,6 @@ export class Application {
   constructor (configurations = null) {
     this.#booted = false
     this.#kernels = new Map()
-    this.#launchers = new Map()
     this.#providers = new Set()
     this.#hasBeenBootstrapped = false
     this.#registeredProviders = new Set()
@@ -54,13 +52,36 @@ export class Application {
   }
 
   /**
+   * Launch the application with a specific launcher.
+   *
+   * @param  {Object} configurations - The application configurations.
+   * @return {any}
+   * @static
+   */
+  static launch (configurations = {}) {
+    const config = typeof configurations === 'function'
+      ? { userDefinedApp: configurations }
+      : (configurations ?? {})
+
+    config.launcher ??= 'default'
+    const LauncherClass = config.launchers?.[config.launcher] ?? config.launchers?.default ?? Launcher
+    const launcher = new LauncherClass()
+
+    if (launcher.launch) {
+      return launcher.launch(this, config)
+    }
+
+    throw new LogicException('Launcher must have a launch method')
+  }
+
+  /**
    * Create a default instance of application.
    *
    * @param  {Object} configurations - The application configurations.
    * @return {Application} An Application object.
    * @static
    */
-  static default (configurations) {
+  static default (configurations = {}) {
     return new this(configurations)
   }
 
@@ -97,8 +118,8 @@ export class Application {
     return this
   }
 
-  notify (eventType, data) {
-    this.#eventManager.notify(eventType, data)
+  emit (eventType, data) {
+    this.#eventManager.emit(eventType, data)
     return this
   }
 
@@ -152,49 +173,6 @@ export class Application {
     return this.#kernels.get(key)
   }
 
-  addLauncher (key, launcher) {
-    this.#configurations.launchers ??= {}
-    this.#configurations.launchers[key] = launcher
-    return this
-  }
-
-  hasLauncher (key) {
-    return !!this.getLauncher(key)
-  }
-
-  getLauncher (key) {
-    return this.#configurations.launchers?.[key]
-  }
-
-  get launcher () {
-    const name = this.#configurations.launcher ?? 'default'
-    if (this.hasResolvedLauncher(name)) {
-      const launcher = this.getResolvedLauncher(name)
-      if (launcher.launch) {
-        return launcher
-      }
-      throw new LogicException('Launcher must have a launch method')
-    }
-    throw new LogicException(`No launcher exist with this name ${name}`)
-  }
-
-  setLauncher (key) {
-    if (this.hasLauncher(key)) {
-      this.#configurations.launcher = key
-      return this
-    }
-
-    throw new LogicException(`No launcher registered with this name ${key}`)
-  }
-
-  hasResolvedLauncher (key) {
-    return this.#launchers.has(key)
-  }
-
-  getResolvedLauncher (key) {
-    return this.#launchers.get(key)
-  }
-
   resolveService (Service) {
     return new Service(this.#container)
   }
@@ -217,18 +195,17 @@ export class Application {
   }
 
   setup () {
-    this.notify(SettingUp, new SettingUp(this))
-    this.notify('app.settingUp', new SettingUp(this))
+    this.emit(SettingUp, new SettingUp(this))
+    this.emit('app.settingUp', new SettingUp(this))
 
     this
       .#makeKernels()
-      .#makeLaunchers()
       .#makeProviders()
       .#makeBootstrappers()
       .#makeConfigurations()
 
-    this.notify(Setup, new Setup(this))
-    this.notify('app.setup', new Setup(this))
+    this.emit(Setup, new Setup(this))
+    this.emit('app.setup', new Setup(this))
 
     return this
   }
@@ -253,13 +230,13 @@ export class Application {
   }
 
   async start () {
-    this.notify(Starting, new Starting(this))
-    this.notify('app.starting', new Starting(this))
+    this.emit(Starting, new Starting(this))
+    this.emit('app.starting', new Starting(this))
 
-    const response = await this.launcher.launch()
+    const response = await this.kernel.run()
 
-    this.notify(Started, new Started(this, response))
-    this.notify('app.started', new Started(this, response))
+    this.emit(Started, new Started(this, response))
+    this.emit('app.started', new Started(this, response))
 
     return response
   }
@@ -269,15 +246,11 @@ export class Application {
   }
 
   async terminate () {
-    this.notify(Terminating, new Terminating(this))
-    this.notify('app.terminating', new Terminating(this))
+    this.emit(Terminating, new Terminating(this))
+    this.emit('app.terminating', new Terminating(this))
 
     if (this.kernel.terminate) {
       await this.kernel.terminate()
-    }
-
-    if (this.launcher.terminate) {
-      await this.launcher.terminate()
     }
 
     for (const provider of this.#providers) {
@@ -286,8 +259,8 @@ export class Application {
       }
     }
 
-    this.notify(Terminate, new Terminate(this))
-    this.notify('app.terminate', new Terminate(this))
+    this.emit(Terminate, new Terminate(this))
+    this.emit('app.terminate', new Terminate(this))
 
     this.clear()
 
@@ -298,9 +271,9 @@ export class Application {
     this.#hasBeenBootstrapped = true
 
     for (const bootstrapper of bootstrappers) {
-      this.notify(`bootstrapping:${bootstrapper.name}`, this.#container)
+      this.emit(`bootstrapping:${bootstrapper.name}`, this.#container)
       await this.#container.make(bootstrapper).bootstrap(this.#container)
-      this.notify(`bootstrapped:${bootstrapper.name}`, this.#container)
+      this.emit(`bootstrapped:${bootstrapper.name}`, this.#container)
     }
 
     return this
@@ -315,8 +288,8 @@ export class Application {
       return this.#providers.get(provider)
     }
 
-    this.notify(Registering, new Registering(this, provider))
-    this.notify('app.registering', new Registering(this, provider))
+    this.emit(Registering, new Registering(this, provider))
+    this.emit('app.registering', new Registering(this, provider))
 
     if (provider.register) {
       await provider.register()
@@ -330,22 +303,22 @@ export class Application {
       this.bootProvider(provider)
     }
 
-    this.notify(Registered, new Registered(this, provider))
-    this.notify('app.registered', new Registered(this, provider))
+    this.emit(Registered, new Registered(this, provider))
+    this.emit('app.registered', new Registered(this, provider))
 
     return this
   }
 
   async bootProvider (provider) {
-    this.notify(Booting, new Booting(this, provider))
-    this.notify('app.booting', new Booting(this, provider))
+    this.emit(Booting, new Booting(this, provider))
+    this.emit('app.booting', new Booting(this, provider))
 
     if (provider.boot) {
       await provider.boot()
     }
 
-    this.notify(Booted, new Booted(this, provider))
-    this.notify('app.booted', new Booted(this, provider))
+    this.emit(Booted, new Booted(this, provider))
+    this.emit('app.booted', new Booted(this, provider))
 
     return this
   }
@@ -368,8 +341,8 @@ export class Application {
 
   setLocale (locale) {
     this.instance('app.locale', locale)
-    this.events.notify(LocaleUpdated, new LocaleUpdated(locale))
-    this.events.notify('locale.updated', new LocaleUpdated(locale))
+    this.emit(LocaleUpdated, new LocaleUpdated(locale))
+    this.emit('locale.updated', new LocaleUpdated(locale))
     return this
   }
 
@@ -401,7 +374,6 @@ export class Application {
     this.#booted = false
     this.#kernels = new Map()
     this.#providers = new Set()
-    this.#launchers = new Map()
     this.#hasBeenBootstrapped = false
     this.#registeredProviders = new Set()
   }
@@ -419,7 +391,6 @@ export class Application {
       .#container
       .instance('app', this)
       .instance(Container, this.#container)
-      .instance('container', this.#container)
       .instance('events', this.#eventManager)
       .instance(EventManager, this.#eventManager)
 
@@ -435,10 +406,12 @@ export class Application {
   }
 
   #makeConfigurations () {
-    this.registerInstance('app.debug', this.#configurations?.debug ?? false)
-    this.registerInstance('app.locale', this.#configurations?.locale ?? 'en')
-    this.registerInstance('app.env', this.#configurations?.env ?? 'production')
-    this.registerInstance('app.fallback_locale', this.#configurations?.fallback_locale ?? 'en')
+    this
+      .setApp(this.#configurations.userDefinedApp)
+      .registerInstance('app.debug', this.#configurations?.debug ?? false)
+      .registerInstance('app.locale', this.#configurations?.locale ?? 'en')
+      .registerInstance('app.env', this.#configurations?.env ?? 'production')
+      .registerInstance('app.fallback_locale', this.#configurations?.fallback_locale ?? 'en')
 
     return this
   }
@@ -466,18 +439,6 @@ export class Application {
 
     if (!this.#kernels.has('default')) {
       this.#kernels.set('default', this.resolveService(Kernel))
-    }
-
-    return this
-  }
-
-  #makeLaunchers () {
-    for (const [name, Class] of Object.entries(this.#configurations.launchers ?? {})) {
-      this.#launchers.set(name, this.resolveService(Class))
-    }
-
-    if (!this.#launchers.has('default')) {
-      this.#launchers.set('default', this.resolveService(Launcher))
     }
 
     return this
