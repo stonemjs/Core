@@ -44,7 +44,8 @@ export class Kernel {
         await this._beforeRunning()
         output = await this.#resolvedUserApp.run()
       } catch (error) {
-        output = error
+        await this._reportException(error)
+        output = await this._renderException(error)
       }
 
       this.#endedAt = Date.now()
@@ -75,6 +76,19 @@ export class Kernel {
     }
 
     return output
+  }
+
+  async _reportException (exception) {
+    const handler = this.#app.get('exceptionHandler')
+    if (handler) { await handler.report(exception) }
+    else if (this.app.isDebug()) { console.log(exception) }
+    return this
+  }
+
+  async _renderException (exception) {
+    const handler = this.#app.get('exceptionHandler')
+    if (handler) { return handler.render(exception) }
+    return exception
   }
 
   _isFunction (value) {

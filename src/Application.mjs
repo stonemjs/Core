@@ -15,6 +15,7 @@ import { Kernel } from './Kernel.mjs'
 import { Launcher } from './Launcher.mjs'
 import { ApplicationException } from './exceptions/ApplicationException.mjs'
 import { Container } from '@stone-js/service-container'
+import { ExceptionHandler, ExceptionHandler } from './ExceptionHandler.mjs'
 
 /**
  * Class representing an Application.
@@ -27,10 +28,10 @@ export class Application {
 
   #booted
   #kernels
-  #container
-  #providers
-  #eventEmitter
   #context
+  #providers
+  #container
+  #eventEmitter
   #userDefinedApp
   #registeredProviders
   #hasBeenBootstrapped
@@ -207,7 +208,7 @@ export class Application {
       .#makeKernels()
       .#makeProviders()
       .#makeBootstrappers()
-      .#RegisterContextItems()
+      .#makeContextItems()
 
     this.emit(Setup, new Setup(this))
     this.emit(Setup.alias, new Setup(this))
@@ -398,6 +399,8 @@ export class Application {
       .instance(Container, this.#container)
       .instance('events', this.#eventEmitter)
       .instance(EventEmitter, this.#eventEmitter)
+      .autoBinding(ExceptionHandler)
+      .instance('logger', console)
 
     this.#userDefinedApp = () => {
       return {
@@ -410,7 +413,9 @@ export class Application {
     return this
   }
 
-  #RegisterContextItems () {
+  #registerContextBindings () {}
+
+  #makeContextItems () {
     this
       .setApp(this.#context.userDefinedApp)
       .registerInstance('app.debug', this.#context?.debug ?? false)

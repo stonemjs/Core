@@ -113,4 +113,3 @@ const context = {
 Application
   .launch(context)
   .then(output => console.log(output))
-  .catch(e => console.log(e))

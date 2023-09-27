@@ -24,6 +24,8 @@ Toutes les fonctionnalités sont paramétrables, ce qui vous permet d'étendre l
 * [Kernels](#kernels)
 * [Launchers](#launchers)
 * [Bootstrappers](#bootstrappers)
+* [Exception handler](#exception-handler)
+* [logger](#avec-le-contexte)
 * [Api](#api)
 * [Credits](#credits)
 
@@ -207,6 +209,20 @@ La liste complète des paramètres du contexte
     ],
 
     /**
+     * The exception handler service
+     * Allowing handle, log and render exceptions within the app
+     */
+    exceptionHandler: null
+
+    /**
+     * Logger name bound to container
+     * Allowing logging within the app
+     * Any other logger must be registered in the service container
+     * Default: console
+     */
+    logger: 'default'
+
+    /**
      * The current launcher used to launch your application
      */
     launcher: 'default',
@@ -283,7 +299,14 @@ Liste des evenements ainsi que leur alias
 ## Bootstrappers
 
 
+## Exception handler
+
+
+## Logger
+
+
 ## API
+
 
 ## Credits
 - [Laravel](https://github.com/illuminate)
