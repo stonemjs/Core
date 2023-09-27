@@ -1,20 +1,15 @@
 const path = require('path')
-const Dotenv = require('dotenv-webpack')
 const { CleanWebpackPlugin } = require('clean-webpack-plugin')
-const NodePolyfillPlugin = require('node-polyfill-webpack-plugin')
 
 module.exports = {
-  target: 'node',
   mode: 'development',
   entry: {
-    http: path.resolve(__dirname, './src/http/index.mjs'),
-    simple: path.resolve(__dirname, './src/simple/index.mjs'),
+    simple: path.resolve(__dirname, './src/simple.mjs'),
+    context: path.resolve(__dirname, './src/context.mjs'),
   },
   devtool: 'inline-source-map',
   plugins: [
-    new Dotenv(),
     new CleanWebpackPlugin(),
-    new NodePolyfillPlugin({ includeAliases: ['http', 'https'] }),
   ],
   output: {
     libraryTarget: 'umd',
@@ -29,11 +24,7 @@ module.exports = {
         test: /\.m?js$/,
         exclude: /node_modules/,
         use: 'babel-loader',
-      },
-      {
-        test: /\.m?js$/,
-        use: 'webpack-import-glob'
-      },
+      }
     ]
   }
 }

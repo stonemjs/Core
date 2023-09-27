@@ -1,5 +1,5 @@
 export class Launcher {
-  launch (Application, configurations = {}) {
-    return Application.default(configurations).run()
+  launch (Application, context = {}) {
+    return Application.default(context).run()
   }
 }

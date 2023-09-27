@@ -30,7 +30,7 @@ export class Application {
   #container
   #providers
   #eventEmitter
-  #configurations
+  #context
   #userDefinedApp
   #registeredProviders
   #hasBeenBootstrapped
@@ -38,15 +38,15 @@ export class Application {
   /**
    * Create an application.
    *
-   * @param {Object} configurations - The application configurations.
+   * @param {Object} context - The application context.
    */
-  constructor (configurations = null) {
+  constructor (context = null) {
     this.#booted = false
     this.#kernels = new Map()
     this.#providers = new Set()
     this.#hasBeenBootstrapped = false
     this.#registeredProviders = new Set()
-    this.#configurations = configurations ?? {}
+    this.#context = context ?? {}
 
     this.#registerBaseBindings()
   }
@@ -54,14 +54,14 @@ export class Application {
   /**
    * Launch the application with a specific launcher.
    *
-   * @param  {Object} [configurations={}] - The application configurations.
+   * @param  {Object} [context={}] - The application context.
    * @return {any}
    * @static
    */
-  static launch (configurations = {}) {
-    const config = typeof configurations === 'function'
-      ? { userDefinedApp: configurations }
-      : (configurations ?? {})
+  static launch (context = {}) {
+    const config = typeof context === 'function'
+      ? { userDefinedApp: context }
+      : (context ?? {})
 
     config.launcher ??= 'default'
     const LauncherClass = config.launchers?.[config.launcher] ?? config.launchers?.default ?? Launcher
@@ -77,12 +77,12 @@ export class Application {
   /**
    * Create a default instance of application.
    *
-   * @param  {Object} configurations - The application configurations.
+   * @param  {Object} context - The application context.
    * @return {Application} An Application object.
    * @static
    */
-  static default (configurations = {}) {
-    return new this(configurations)
+  static default (context = {}) {
+    return new this(context)
   }
 
   /**
@@ -138,8 +138,8 @@ export class Application {
   }
 
   addKernel (key, kernel) {
-    this.#configurations.kernels ??= {}
-    this.#configurations.kernels[key] = kernel
+    this.#context.kernels ??= {}
+    this.#context.kernels[key] = kernel
     return this
   }
 
@@ -148,12 +148,12 @@ export class Application {
   }
 
   getKernel (key) {
-    return this.#configurations.kernels?.[key]
+    return this.#context.kernels?.[key]
   }
 
   setKernel (key) {
     if (this.hasKernel(key)) {
-      this.#configurations.kernel = key
+      this.#context.kernel = key
       return this
     }
 
@@ -161,7 +161,7 @@ export class Application {
   }
 
   get kernel () {
-    const kernel = this.#configurations.kernel ?? 'default'
+    const kernel = this.#context.kernel ?? 'default'
 
     if (this.hasResolvedKernel(kernel)) {
       return this.getResolvedKernel(kernel)
@@ -207,7 +207,7 @@ export class Application {
       .#makeKernels()
       .#makeProviders()
       .#makeBootstrappers()
-      .#makeConfigurations()
+      .#RegisterContextItems()
 
     this.emit(Setup, new Setup(this))
     this.emit(Setup.alias, new Setup(this))
@@ -410,13 +410,13 @@ export class Application {
     return this
   }
 
-  #makeConfigurations () {
+  #RegisterContextItems () {
     this
-      .setApp(this.#configurations.userDefinedApp)
-      .registerInstance('app.debug', this.#configurations?.debug ?? false)
-      .registerInstance('app.locale', this.#configurations?.locale ?? 'en')
-      .registerInstance('app.env', this.#configurations?.env ?? 'production')
-      .registerInstance('app.fallbackLocale', this.#configurations?.fallbackLocale ?? 'en')
+      .setApp(this.#context.userDefinedApp)
+      .registerInstance('app.debug', this.#context?.debug ?? false)
+      .registerInstance('app.locale', this.#context?.locale ?? 'en')
+      .registerInstance('app.env', this.#context?.env ?? 'production')
+      .registerInstance('app.fallbackLocale', this.#context?.fallbackLocale ?? 'en')
 
     return this
   }
@@ -430,7 +430,7 @@ export class Application {
   }
 
   #makeProviders () {
-    for (const Class of this.#configurations.providers ?? []) {
+    for (const Class of this.#context.providers ?? []) {
       this.#providers.add(this.resolveService(Class))
     }
 
@@ -438,7 +438,7 @@ export class Application {
   }
 
   #makeKernels () {
-    for (const [name, Class] of Object.entries(this.#configurations.kernels ?? {})) {
+    for (const [name, Class] of Object.entries(this.#context.kernels ?? {})) {
       this.#kernels.set(name, this.resolveService(Class))
     }
 

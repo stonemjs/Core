@@ -16,10 +16,14 @@ Toutes les fonctionnalités sont paramétrables, ce qui vous permet d'étendre l
 * [Pourquoi dois je utiliser StoneJs Core](#pourquoi-dois-je-utiliser-stonejs-Core)
 * [Installation](#installation)
 * [Utilisation](#utilisation)
-    * [Simple utilisation](#simple-utilisation)
+    * [Utilisation simple](#utilisation-simple)
     * [Avec le contexte](#avec-le-contexte)
 * [Contexte](#contexte)
+* [Providers](#providers)
 * [Evenements](#evenements)
+* [Kernels](#kernels)
+* [Launchers](#launchers)
+* [Bootstrappers](#bootstrappers)
 * [Api](#api)
 * [Credits](#credits)
 
@@ -72,7 +76,7 @@ La methode `run` doit avoir la logique pour lancer votre application et peut êt
 
 Des exemples d'utilisations se trouvent dans le répertoire `examples`.
 
-### Simple utilisation
+### Utilisation simple
 
 Le moyen le plus simple d'utilisation c'est de fournir votre application en paramètre à la méthode statique `Application.launch`.
 
@@ -101,7 +105,10 @@ L'autre moyen c'est de fournir un objet contexte contenant toutes les informatio
 L'object de contexte est décrit plus bas.
 
 ```js
-// Avec le contexte
+/**
+ * Avec le contexte
+ * Un exemple plus complet se trouve ici: examples/src/context.mjs, n'hésitez pas de jeter un oeil.
+ */
 const context = {
   app ({ appName, app_name }) {
     return {
@@ -136,6 +143,13 @@ La liste complète des paramètres du contexte
 ```js
   {
     /**
+     * User defined application
+     * Your application to be launched
+     * Must be the entry point of your application
+     */
+    app: null,
+
+    /**
      * The environnement
      * Ex: production, staging, developement, local
      */
@@ -155,12 +169,6 @@ La liste complète des paramètres du contexte
      * Fallback locale
      */
     fallbackLocale: 'en',
-    
-    /**
-     * User defined application
-     * Your application to be launched
-     */
-    userDefinedApp: null,
 
     /**
      * List of bootstrappers used to bootstrap the application
@@ -168,7 +176,7 @@ La liste complète des paramètres du contexte
     bootstrappers: [],
 
     /**
-     * List of Service providers to register in the Service container
+     * List of Service providers to register services in the Service container
      */
     providers: [],
 
@@ -176,7 +184,7 @@ La liste complète des paramètres du contexte
      * List of bindings to register in the Service container
      */
     bindings: [
-      // { name: 'appName', value: '', alias: ['app_name'], singleton: true }
+      // { name: 'name', value: '', alias: ['name_alias'], singleton: true }
     ],
 
     /**
@@ -205,6 +213,7 @@ La liste complète des paramètres du contexte
 
     /**
      * List of avalaible launchers
+     * Only the default launcher is provided
      * Feel free to create yours and add it here
      */
     launchers: {
@@ -223,6 +232,7 @@ La liste complète des paramètres du contexte
 
     /**
      * List of avalaible kernels
+     * Only the default kernel is provided
      * Feel free to create yours and add it here
      */
     kernels: {
@@ -258,6 +268,22 @@ Liste des evenements ainsi que leur alias
 | Terminate          | app.terminate      |
 | LocaleUpdated      | app.locale.updated |
 
+## Providers
+
+
+## Kernels
+
+
+## Launchers
+
+
+## Evenements
+
+
+## Bootstrappers
+
+
+## API
 
 ## Credits
 - [Laravel](https://github.com/illuminate)
