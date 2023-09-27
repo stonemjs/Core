@@ -51,21 +51,15 @@ export class ExceptionHandler {
   async _reportException (exception) {
     this.#reportedException.add(exception)
 
-    const logger = this.app.get('logger')
-
-    if (!logger) {
-      throw exception
-    }
-
     const level = Object
       .entries(this.#levels)
       .reduce((prev, [Class, item]) => (exception instanceof Class) ? item : prev, 'error')
     
     const exceptionContext = this._buildExceptionContext(exception)
 
-    logger[level]
-      ? logger[level](exceptionContext, exception.message)
-      : logger.error(exceptionContext, exception.message)
+    this.app.logger[level]
+      ? this.app.logger[level](exceptionContext, exception.message)
+      : this.app.logger.error(exceptionContext, exception.message)
   }
 
   _buildExceptionContext(exception) {

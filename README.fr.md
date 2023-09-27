@@ -272,7 +272,6 @@ Liste des evenements ainsi que leur alias
 
 | Evenements         |  Alias             |
 |--------------------|--------------------|
-| SettingUp          | app.settingUp      |
 | Setup              | app.setup          |
 | Registering        | app.registering    |
 | Registered         | app.registered     |

@@ -8,7 +8,6 @@ import { Terminate } from './events/Terminate.mjs'
 import { Terminating } from './events/Terminating.mjs'
 import { Booting } from './events/Booting.mjs'
 import { LogicException } from './exceptions/LogicException.mjs'
-import { SettingUp } from './events/SettingUp.mjs'
 import { Setup } from './events/Setup.mjs'
 import { LocaleUpdated } from './events/LocaleUpdated.mjs'
 import { Kernel } from './Kernel.mjs'
@@ -94,6 +93,10 @@ export class Application {
     return Application.VERSION
   }
 
+  get context () {
+    return this.#context
+  }
+
   get container () {
     return this.#container
   }
@@ -108,6 +111,10 @@ export class Application {
 
   get userDefinedApp () {
     return this.#userDefinedApp
+  }
+
+  get logger () {
+    return this.get(`logger.${this.context.logger}`, console)
   }
 
   get (key, fallback = null) {
@@ -201,14 +208,12 @@ export class Application {
   }
 
   setup () {
-    this.emit(SettingUp, new SettingUp(this))
-    this.emit(SettingUp.alias, new SettingUp(this))
-
     this
       .#makeKernels()
       .#makeProviders()
       .#makeBootstrappers()
       .#makeContextItems()
+      .#registerEventListeners()
 
     this.emit(Setup, new Setup(this))
     this.emit(Setup.alias, new Setup(this))
@@ -220,6 +225,9 @@ export class Application {
     for (const provider of this.#providers) {
       await this.registerProvider(provider)
     }
+    
+    this.#registerContextBindings()
+
     return this
   }
 
@@ -399,8 +407,8 @@ export class Application {
       .instance(Container, this.#container)
       .instance('events', this.#eventEmitter)
       .instance(EventEmitter, this.#eventEmitter)
-      .autoBinding(ExceptionHandler)
-      .instance('logger', console)
+      .instance('logger.default', console)
+      .autoBinding(this.#context.exceptionHandler ?? ExceptionHandler)
 
     this.#userDefinedApp = () => {
       return {
@@ -413,17 +421,82 @@ export class Application {
     return this
   }
 
-  #registerContextBindings () {}
+  #registerEventListeners () {
+    return this
+      .#registerContextListeners()
+      .#registerProvidersListeners()
+      .#registerContextSubscribers()
+      .#registerProvidersSubscribers()
+  }
+
+  #registerProvidersListeners () {
+    for (const provider of this.#providers) {
+      if (provider.listeners) {
+        this.#registerEventListener(Object.entries(provider.listeners))
+      }
+    }
+
+    return this
+  }
+
+  #registerProvidersSubscribers () {
+    for (const provider of this.#providers) {
+      if (provider.subscribers) {
+        for (const subscriber of provider.subscribers) {
+          this.#registerEventSubscriber(subscriber)
+        }
+      }
+    }
+
+    return this
+  }
+
+  #registerContextListeners () {
+    return this.#registerEventListener(Object.entries(this.#context.listeners ?? {}))
+  }
+
+  #registerContextSubscribers () {
+    for (const subscriber of this.#context.subscribers ?? []) {
+      this.#registerEventSubscriber(subscriber)
+    }
+
+    return this
+  }
+
+
+  #registerEventSubscriber (eventSubscriber) {
+    eventSubscriber.subscribe(this.#container)
+    return this
+  }
+
+  #registerEventListener (eventListener) {
+    for (const [eventName, listeners] of eventListener) {
+      for (const listener of listeners) {
+        this.registerService(listener)
+        this.on(eventName, e => this.get(listener).handle(e))
+      }
+    }
+
+    return this
+  }
+
+  #registerContextBindings () {
+    for (const binding of this.#context.bindings ?? []) {
+      this.#container.autoBinding(binding.name ?? binding.value, binding.value, binding.singleton, binding.alias)
+    }
+
+    return this
+  }
 
   #makeContextItems () {
-    this
+    return this
       .setApp(this.#context.userDefinedApp)
       .registerInstance('app.debug', this.#context?.debug ?? false)
       .registerInstance('app.locale', this.#context?.locale ?? 'en')
       .registerInstance('app.env', this.#context?.env ?? 'production')
+      .registerInstance('app.logger', this.#context?.logger ?? 'default')
+      .registerInstance('app.kernel', this.#context?.kernel ?? 'default')
       .registerInstance('app.fallbackLocale', this.#context?.fallbackLocale ?? 'en')
-
-    return this
   }
 
   #makeBootstrappers () {
