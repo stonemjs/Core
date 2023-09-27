@@ -8,13 +8,14 @@ import { Terminate } from './events/Terminate.mjs'
 import { Terminating } from './events/Terminating.mjs'
 import { Booting } from './events/Booting.mjs'
 import { LogicException } from './exceptions/LogicException.mjs'
+import { SettingUp } from './events/SettingUp.mjs'
 import { Setup } from './events/Setup.mjs'
 import { LocaleUpdated } from './events/LocaleUpdated.mjs'
 import { Kernel } from './Kernel.mjs'
 import { Launcher } from './Launcher.mjs'
 import { ApplicationException } from './exceptions/ApplicationException.mjs'
 import { Container } from '@stone-js/service-container'
-import { ExceptionHandler, ExceptionHandler } from './ExceptionHandler.mjs'
+import { ExceptionHandler } from './ExceptionHandler.mjs'
 
 /**
  * Class representing an Application.
@@ -64,6 +65,7 @@ export class Application {
       : (context ?? {})
 
     config.launcher ??= 'default'
+    config.userDefinedApp ??= config.app
     const LauncherClass = config.launchers?.[config.launcher] ?? config.launchers?.default ?? Launcher
     const launcher = new LauncherClass()
 
@@ -208,12 +210,14 @@ export class Application {
   }
 
   setup () {
+    this.emit(SettingUp, new SettingUp(this))
+    this.emit(SettingUp.alias, new SettingUp(this))
+
     this
       .#makeKernels()
       .#makeProviders()
       .#makeBootstrappers()
       .#makeContextItems()
-      .#registerEventListeners()
 
     this.emit(Setup, new Setup(this))
     this.emit(Setup.alias, new Setup(this))
@@ -225,14 +229,14 @@ export class Application {
     for (const provider of this.#providers) {
       await this.registerProvider(provider)
     }
-    
-    this.#registerContextBindings()
 
-    return this
+    return this.#registerContextBindings()
   }
 
   async boot () {
     if (this.#booted) return
+
+    this.#registerEventListeners()
 
     for (const provider of this.#providers) {
       await this.bootProvider(provider)
@@ -273,10 +277,10 @@ export class Application {
       }
     }
 
+    this.clear()
+
     this.emit(Terminate, new Terminate(this))
     this.emit(Terminate.alias, new Terminate(this))
-
-    this.clear()
 
     return this
   }
@@ -298,8 +302,8 @@ export class Application {
   }
 
   async registerProvider (provider, force = false) {
-    if (this.#providers.has(provider) && !force) {
-      return this.#providers.get(provider)
+    if (this.providerIsRegistered(provider) && !force) {
+      return this
     }
 
     this.emit(Registering, new Registering(this, provider))
@@ -418,7 +422,7 @@ export class Application {
       }
     }
 
-    return this
+    return this.#registerHookListeners()
   }
 
   #registerEventListeners () {
@@ -463,6 +467,9 @@ export class Application {
     return this
   }
 
+  #registerHookListeners () {
+    return this.#registerEventListener(Object.entries(this.#context.hookListeners ?? {}))
+  }
 
   #registerEventSubscriber (eventSubscriber) {
     eventSubscriber.subscribe(this.#container)

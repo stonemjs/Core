@@ -30,6 +30,8 @@ export class Kernel {
     const App = this.#app.userDefinedApp
 
     if (this._isFunction(App)) {
+      await this.bootstrap()
+
       this.#startedAt = Date.now()
       this.#resolvedUserApp = this._isClass(App) ? new App(this.#app.container) : App(this.#app.container)
 
@@ -40,7 +42,6 @@ export class Kernel {
       let output
 
       try {
-        await this.bootstrap()
         await this._beforeRunning()
         output = await this.#resolvedUserApp.run()
       } catch (error) {
@@ -80,8 +81,11 @@ export class Kernel {
 
   async _reportException (exception) {
     const handler = this.#app.get('exceptionHandler')
-    if (handler) { await handler.report(exception) }
-    else if (this.app.isDebug()) { console.log(exception) }
+    if (handler) {
+      await handler.report(exception)
+    } else if (this.app.isDebug()) {
+      console.log(exception)
+    }
     return this
   }
 

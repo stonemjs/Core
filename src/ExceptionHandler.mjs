@@ -54,7 +54,7 @@ export class ExceptionHandler {
     const level = Object
       .entries(this.#levels)
       .reduce((prev, [Class, item]) => (exception instanceof Class) ? item : prev, 'error')
-    
+
     const exceptionContext = this._buildExceptionContext(exception)
 
     this.app.logger[level]
@@ -62,7 +62,7 @@ export class ExceptionHandler {
       : this.app.logger.error(exceptionContext, exception.message)
   }
 
-  _buildExceptionContext(exception) {
+  _buildExceptionContext (exception) {
     const context = [{ exception }]
     exception.context && context.push(exception.context)
     exception.metadata && context.push(exception.metadata)
@@ -77,7 +77,7 @@ export class ExceptionHandler {
     return [...this.#dontReport, ...this.#internalDontReport]
       .reduce((prev, curr) => exception instanceof curr ? false : prev, true)
   }
-  
+
   async render (exception) {
     if (exception.getResponse) {
       return exception.getResponse()

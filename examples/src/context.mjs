@@ -31,7 +31,7 @@ class MyApplication {
   async run () {
     console.log('Hello world! My awesome application name is:', this.appName)
     console.log('And this is my users:', await this.userService.getUsers())
-
+    // throw new Error('My bad')
     return `This is my output with an alias: ${this.app_name}`
   }
 }
@@ -63,9 +63,9 @@ class AppServiceProvider {
 }
 
 /**
- * A listener
+ * An Event listener
  */
-class AppStartingListener {
+class AppStartedEventListener {
   /**
    * Destructuring Dependency Injection
    */
@@ -73,8 +73,26 @@ class AppStartingListener {
     this.appName = appName
   }
 
-  handle() {
-    console.log(`MyApp(${this.appName}) starting event`)
+  handle(event) {
+    console.log(`MyApp(${this.appName}) started event from EventListener`)
+    console.log('The event name', event.name)
+  }
+}
+
+/**
+ * An Hook listener
+ */
+class AppSettingUpHookListener {
+  /**
+   * Only [app, container, EventEmitter, ExceptionHandler] are availables
+   */
+  constructor ({ app }) {
+    this.app = app
+  }
+
+  handle(event) {
+    console.log(`MyApp version(${this.app.version}) started event from HookListener`)
+    console.log('The hook event name', event.name)
   }
 }
 
@@ -99,11 +117,15 @@ const bindings = [
  * The app execution context
  */
 const context = {
+  debug: true,
   bindings,
-  app: MyApplication, // or use: myApp
+  app: MyApplication, // or use: myApp,
   providers: [ AppServiceProvider ],
   listeners: {
-    'app.starting': [ AppStartingListener ]
+    'app.started': [ AppStartedEventListener ]
+  },
+  hookListeners: {
+    'app.settingUp': [ AppSettingUpHookListener ],
   }
 }
 
@@ -112,4 +134,4 @@ const context = {
  */
 Application
   .launch(context)
-  .then(output => console.log(output))
+  .then(output => console.log('Ouput:', output))

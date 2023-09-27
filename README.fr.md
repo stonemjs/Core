@@ -190,13 +190,20 @@ La liste complète des paramètres du contexte
     ],
 
     /**
+     * Application life cycle hooks's listeners
+     */
+    hookListeners: {
+      // 'app.starting': [ MyStartingHookListener ],
+    },
+
+    /**
      * List of listeners
      * Allowing you to subscribe and listen for various events that occur within your application
      */
     listeners: {
       // Dummy listener for example purpose
       // Booted: [ MyBootedListener ],
-      // 'app.starting': [ MyStartingListener ],
+      // 'app.started': [ MyStartedListener ],
     },
 
     /**
@@ -228,7 +235,7 @@ La liste complète des paramètres du contexte
     launcher: 'default',
 
     /**
-     * List of avalaible launchers
+     * List of available launchers
      * Only the default launcher is provided
      * Feel free to create yours and add it here
      */
@@ -247,7 +254,7 @@ La liste complète des paramètres du contexte
     kernel: 'default',
 
     /**
-     * List of avalaible kernels
+     * List of available kernels
      * Only the default kernel is provided
      * Feel free to create yours and add it here
      */
@@ -263,24 +270,39 @@ La liste complète des paramètres du contexte
 
 ## Evenements
 
-StoneJS Core implemente le gestionnaire d'evenement de nodeJs `EventEmitter` pour gérer ses evenements, 
-vous pouvez profiter de la même API pour interagir et gérer les evenements de votre application.
+StoneJS Core implemente le gestionnaire d'événement de nodeJs `EventEmitter` pour gérer ses événements, 
+vous pouvez profiter de la même API pour interagir et gérer les événements de votre application.
 
-Tous les principaux evenements sont localisés dans le repertoire `src/events`, vous pouvez utiliser les classes comme nom pour abonner aux evenements.
+Tous les principaux événements sont localisés dans le repertoire `src/events`, vous pouvez utiliser les classes comme nom pour abonner aux événements.
 
-Liste des evenements ainsi que leur alias
+**Important:** Les `event listeners` et `event subscribers` commencent à écouter après l'événement `Registered` parce qu'on doit d'abord 
+attendre que toutes les dépendances soient enregistrées.
 
+### Liste des événements du cycle de vie de l'application
+
+Ces événements sont lancés l'un après l'autre à chaque changement d'état de l'application. 
+Il faut utiliser le paramètre `hookListeners` du contexte afin de les écouter.
+
+**Important:** Les dépendances du service container sont disponibles uniquement après l'événement `Registered` et avant `Terminate`, toute tentative d'accès
+à un élément du container lancera une exception. Voir le tableau ci-dessous.
+
+| Evenements         |  Alias             | Availability
+|--------------------|--------------------|-------------------------------------------------------------------
+| SettingUp          | app.settingUp      | hookListeners
+| Setup              | app.setup          | hookListeners
+| Starting           | app.starting       | hookListeners
+| Registering        | app.registering    | hookListeners
+| Registered         | app.registered     | hookListeners, service Container
+| Booting            | app.booting        | hookListeners, eventListeners, eventSubscribers, service Container
+| Booted             | app.booted         | hookListeners, eventListeners, eventSubscribers, service Container
+| Started            | app.started        | hookListeners, eventListeners, eventSubscribers, service Container
+| Terminating        | app.terminating    | hookListeners, eventListeners, eventSubscribers, service Container
+| Terminate          | app.terminate      | hookListeners
+
+
+### Autres
 | Evenements         |  Alias             |
 |--------------------|--------------------|
-| Setup              | app.setup          |
-| Registering        | app.registering    |
-| Registered         | app.registered     |
-| Booting            | app.booting        |
-| Booted             | app.booted         |
-| Starting           | app.starting       |
-| Started            | app.started        |
-| Terminating        | app.terminating    |
-| Terminate          | app.terminate      |
 | LocaleUpdated      | app.locale.updated |
 
 ## Providers
@@ -290,9 +312,6 @@ Liste des evenements ainsi que leur alias
 
 
 ## Launchers
-
-
-## Evenements
 
 
 ## Bootstrappers

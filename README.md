@@ -84,7 +84,7 @@ You can use it for any purpose,
     launcher: 'default',
 
     /**
-     * List of avalaible launchers
+     * List of available launchers
      * Feel free to create yours and add it here
      * This is a dummy list, only one launcher exists, the default one
      */
@@ -102,7 +102,7 @@ You can use it for any purpose,
     kernel: 'default',
 
     /**
-     * List of avalaible kernels
+     * List of available kernels
      * Feel free to create yours and add it here
      * This is a dummy list, only one kernel exists, the default one
      */
