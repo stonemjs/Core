@@ -70,6 +70,6 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "@stone-js/service-container": "^0.0.3"
+    "@stone-js/service-container": "^0.0.4"
   }
 }

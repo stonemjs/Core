@@ -115,7 +115,7 @@ export class Application {
   }
 
   get logger () {
-    return this.get(`logger.${this.context.logger}`, console)
+    return this.get(`app.logger.${this.context.logger}`, console)
   }
 
   get (key, fallback = null) {
@@ -372,12 +372,12 @@ export class Application {
   }
 
   setFallbackLocale (locale) {
-    this.instance('app.fallbackLocale', locale)
+    this.instance('app.locale.fallback', locale)
     return this
   }
 
   getFallbackLocale () {
-    return this.get('app.fallbackLocale', 'en')
+    return this.get('app.locale.fallback', 'en')
   }
 
   abort (code, message, metadata = {}) {
@@ -406,12 +406,17 @@ export class Application {
 
     this
       .#container
-      .instance('app', this)
+      .instance(Application, this)
       .instance(Container, this.#container)
-      .instance('events', this.#eventEmitter)
+      .instance('app.logger.default', console)
       .instance(EventEmitter, this.#eventEmitter)
-      .instance('logger.default', console)
-      .autoBinding(this.#context.exceptionHandler ?? ExceptionHandler)
+      .autoBinding(ExceptionHandler, this.#context.exceptionHandler ?? ExceptionHandler)
+      .alias(Application, 'app')
+      .alias(Container, 'container')
+      .alias(EventEmitter, 'events')
+      .alias(Application, 'application')
+      .alias(EventEmitter, 'eventEmitter')
+      .alias(ExceptionHandler, 'exceptionHandler')
 
     this.#guestApp = () => {
       return {
@@ -502,7 +507,7 @@ export class Application {
       .registerInstance('app.env', this.#context?.env ?? 'production')
       .registerInstance('app.logger', this.#context?.logger ?? 'default')
       .registerInstance('app.kernel', this.#context?.kernel ?? 'default')
-      .registerInstance('app.fallbackLocale', this.#context?.fallbackLocale ?? 'en')
+      .registerInstance('app.locale.fallback', this.#context?.fallbackLocale ?? 'en')
   }
 
   #makeBootstrappers () {
