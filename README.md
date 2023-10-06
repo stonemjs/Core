@@ -51,7 +51,7 @@ You can use it for any purpose,
      * User defined application
      * Your application to be launched
      */
-    guestApp: null,
+    appModule: null,
 
     /**
      * List of bootstrappers used to bootstrap the application

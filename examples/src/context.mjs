@@ -58,7 +58,7 @@ class AppServiceProvider {
   }
 
   register () {
-    this.app.registerService(UserService)
+    this.app.registerService(UserService, true, ['userService'])
   }
 }
 

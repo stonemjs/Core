@@ -27,7 +27,7 @@ export class Kernel {
   }
 
   async run () {
-    const App = this.#app.guestApp
+    const App = this.#app.appModule
 
     if (this._isFunction(App)) {
       await this.bootstrap()

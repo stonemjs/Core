@@ -16,6 +16,7 @@ import { Launcher } from './Launcher.mjs'
 import { ApplicationException } from './exceptions/ApplicationException.mjs'
 import { Container } from '@stone-js/service-container'
 import { ExceptionHandler } from './ExceptionHandler.mjs'
+import { Macroable } from '@stone-js/macroable'
 
 /**
  * Class representing an Application.
@@ -23,13 +24,13 @@ import { ExceptionHandler } from './ExceptionHandler.mjs'
  * @version 0.0.1
  * @author Mr. Stone <pierre.evens16@gmail.com>
  */
-export class Application {
+export class Application extends Macroable {
   static VERSION = '0.0.1'
 
   #booted
   #kernels
   #context
-  #guestApp
+  #appModule
   #providers
   #container
   #eventEmitter
@@ -110,8 +111,8 @@ export class Application {
     return this.#hasBeenBootstrapped
   }
 
-  get guestApp () {
-    return this.#guestApp
+  get appModule () {
+    return this.#appModule
   }
 
   get logger () {
@@ -137,12 +138,12 @@ export class Application {
     return this
   }
 
-  app (guestApp) {
-    return this.setApp(guestApp)
+  app (appModule) {
+    return this.setApp(appModule)
   }
 
-  setApp (guestApp) {
-    this.#guestApp = guestApp ?? this.#guestApp
+  setApp (appModule) {
+    this.#appModule = appModule ?? this.#appModule
     return this
   }
 
@@ -201,9 +202,9 @@ export class Application {
     return this
   }
 
-  run (guestApp = null) {
+  run (appModule = null) {
     return this
-      .setApp(guestApp)
+      .setApp(appModule)
       .setup()
       .start()
   }
@@ -418,7 +419,7 @@ export class Application {
       .alias(EventEmitter, 'eventEmitter')
       .alias(ExceptionHandler, 'exceptionHandler')
 
-    this.#guestApp = () => {
+    this.#appModule = () => {
       return {
         run () {
           console.log('Hello world!')

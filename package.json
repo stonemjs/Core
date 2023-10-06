@@ -70,6 +70,8 @@
     "webpack-cli": "^5.1.4"
   },
   "dependencies": {
-    "@stone-js/service-container": "^0.0.4"
+    "@stone-js/macroable": "^1.0.0",
+    "@stone-js/service-container": "^0.0.4",
+    "deepmerge": "^4.3.1"
   }
 }

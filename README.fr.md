@@ -318,9 +318,13 @@ Il faut utiliser le paramètre `hookListeners` du contexte afin de les écouter.
 
 
 ## Exception handler
+Toutes les exceptions lancées par votre application sont interceptées et retournées dans un objet erreur avec ses informations.
 
 
 ## Logger
+
+
+## Decorators
 
 
 ## API
