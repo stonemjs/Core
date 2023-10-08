@@ -4,7 +4,8 @@ import deepmerge from 'deepmerge'
  * ListenerConfiguration.
  *
  * @typedef  {Object}  ListenerConfiguration
- * @property {boolean} hook
+ * @property {string}  event                  - The event name to listen to
+ * @property {boolean} hook                   - Listen for hook events
  */
 
 /**
@@ -17,6 +18,7 @@ export const Listener = (value = {}) => {
   return (target) => {
     value ??= {}
     target.metadata = deepmerge(target.metadata ?? {}, { ...value, isListener: true })
+    target.metadata.hook ??= false
     return target
   }
 }
