@@ -1,6 +1,6 @@
 {
   "name": "@stone-js/core",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "StoneJS core",
   "main": "./src/index.mjs",
   "module": "./src/index.mjs",
