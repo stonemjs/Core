@@ -5,7 +5,7 @@ module.exports = {
   mode: 'development',
   entry: {
     simple: path.resolve(__dirname, './src/simple.mjs'),
-    context: path.resolve(__dirname, './src/context.mjs'),
+    configurations: path.resolve(__dirname, './src/configurations.mjs'),
   },
   devtool: 'inline-source-map',
   plugins: [

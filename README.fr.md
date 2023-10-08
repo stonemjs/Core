@@ -17,15 +17,15 @@ Toutes les fonctionnalités sont paramétrables, ce qui vous permet d'étendre l
 * [Installation](#installation)
 * [Utilisation](#utilisation)
     * [Utilisation simple](#utilisation-simple)
-    * [Avec le contexte](#avec-le-contexte)
-* [Contexte](#contexte)
+    * [Avec les configurations](#avec-les-configurations)
+* [Configurations](#configurations)
 * [Providers](#providers)
 * [Evenements](#evenements)
 * [Kernels](#kernels)
 * [Launchers](#launchers)
 * [Bootstrappers](#bootstrappers)
 * [Exception handler](#exception-handler)
-* [logger](#avec-le-contexte)
+* [logger](#logger)
 * [Api](#api)
 * [Credits](#credits)
 
@@ -70,7 +70,7 @@ $ yarn add @stone-js/core
 
 ## Utilisation
 
-Vous pouvez lancer votre application via la méthode statique `Application.launch`, il prend soit votre application ou objet de contexte en paramètre.
+Vous pouvez lancer votre application via la méthode statique `Application.launch`, il prend soit votre application ou objet de configurations en paramètre.
 Votre application peut être une function ou une classe, et doit avoir la méthode `run` sans quoi une exception sera lancée.
 La methode `run` doit avoir la logique pour lancer votre application et peut être asynchrone, si elle retourne une valeur, elle sera retourné par la methode `Application.launch`. Si votre application est une function elle doit retourner un objet contenant la méthode `run`.
 
@@ -101,17 +101,17 @@ const output = await Application.launch(({ app }) => {
 console.log(output)
 ```
 
-### Avec le contexte
+### Avec les configurations
 
-L'autre moyen c'est de fournir un objet contexte contenant toutes les informations pour lancer votre application.
-L'object de contexte est décrit plus bas.
+L'autre moyen c'est de fournir un objet de configurations contenant toutes les informations pour lancer votre application.
+L'object de configurations est décrit plus bas.
 
 ```js
 /**
- * Avec le contexte
- * Un exemple plus complet se trouve ici: examples/src/context.mjs, n'hésitez pas de jeter un oeil.
+ * Avec les configurations
+ * Un exemple plus complet se trouve ici: examples/src/configurations.mjs, n'hésitez pas de jeter un oeil.
  */
-const context = {
+const configurations = {
   app ({ appName, app_name }) {
     return {
       run () {
@@ -131,139 +131,141 @@ const context = {
 }
 
 Application
-  .launch(context)
+  .launch(configurations)
   .then(output => console.log(output))
   .catch(e => console.log(e))
 
 ```
 
 
-## Contexte
+## Configurations
 
-La liste complète des paramètres du contexte
+La liste complète des paramètres de configurations
 
 ```js
   {
-    /**
-     * User defined application
-     * Your application to be launched
-     * Must be the entry point of your application
-     */
-    app: null,
+    app: {
+      /**
+       * User defined application
+       * Your application to be launched
+       * Must be the entry point of your application
+       */
+      appModule: null,
 
-    /**
-     * The environnement
-     * Ex: production, staging, developement, local
-     */
-    env: 'local',
+      /**
+       * The environnement
+       * Ex: production, staging, developement, local
+       */
+      env: 'local',
 
-    /**
-     * Debug mode
-     */
-    debug: false,
+      /**
+       * Debug mode
+       */
+      debug: false,
 
-    /**
-     * Current app locale
-     */
-    locale: 'en',
-    
-    /**
-     * Fallback locale
-     */
-    fallbackLocale: 'en',
+      /**
+       * Current app locale
+       */
+      locale: 'en',
+      
+      /**
+       * Fallback locale
+       */
+      fallbackLocale: 'en',
 
-    /**
-     * List of bootstrappers used to bootstrap the application
-     */
-    bootstrappers: [],
+      /**
+       * List of bootstrappers used to bootstrap the application
+       */
+      bootstrappers: [],
 
-    /**
-     * List of Service providers to register services in the Service container
-     */
-    providers: [],
+      /**
+       * List of Service providers to register services in the Service container
+       */
+      providers: [],
 
-    /**
-     * List of bindings to register in the Service container
-     */
-    bindings: [
-      // { name: 'name', value: '', alias: ['name_alias'], singleton: true }
-    ],
+      /**
+       * List of bindings to register in the Service container
+       */
+      bindings: [
+        // { name: 'name', value: '', alias: ['name_alias'], singleton: true }
+      ],
 
-    /**
-     * Application life cycle hooks's listeners
-     */
-    hookListeners: {
-      // 'app.starting': [ MyStartingHookListener ],
-    },
+      /**
+       * Application life cycle hooks's listeners
+       */
+      hookListeners: {
+        // 'app.starting': [ MyStartingHookListener ],
+      },
 
-    /**
-     * List of listeners
-     * Allowing you to subscribe and listen for various events that occur within your application
-     */
-    listeners: {
-      // Dummy listener for example purpose
-      // Booted: [ MyBootedListener ],
-      // 'app.started': [ MyStartedListener ],
-    },
+      /**
+       * List of listeners
+       * Allowing you to subscribe and listen for various events that occur within your application
+       */
+      listeners: {
+        // Dummy listener for example purpose
+        // Booted: [ MyBootedListener ],
+        // 'app.started': [ MyStartedListener ],
+      },
 
-    /**
-     * List of subscribers
-     * Allowing you to define several event handlers within a single class
-     */
-    subscribers: [
-      // Dummy subscriber for example purpose
-      // AppEventSubscriber
-    ],
+      /**
+       * List of subscribers
+       * Allowing you to define several event handlers within a single class
+       */
+      subscribers: [
+        // Dummy subscriber for example purpose
+        // AppEventSubscriber
+      ],
 
-    /**
-     * The exception handler service
-     * Allowing handle, log and render exceptions within the app
-     */
-    exceptionHandler: null
+      /**
+       * The exception handler service
+       * Allowing handle, log and render exceptions within the app
+       */
+      exceptionHandler: null
 
-    /**
-     * Logger name bound to container
-     * Allowing logging within the app
-     * Any other logger must be registered in the service container
-     * Default: console
-     */
-    logger: 'default'
+      /**
+       * Logger name bound to container
+       * Allowing logging within the app
+       * Any other logger must be registered in the service container
+       * Default: console
+       */
+      logger: 'default'
 
-    /**
-     * The current launcher used to launch your application
-     */
-    launcher: 'default',
+      /**
+       * The current launcher used to launch your application
+       */
+      launcher: 'default',
 
-    /**
-     * List of available launchers
-     * Only the default launcher is provided
-     * Feel free to create yours and add it here
-     */
-    launchers: {
-      // This is a dummy list, only one launcher exists, the default one
-      // http: HttpLauncher,
-      // repl: REPLLauncher,
-      // console: ConsoleLauncher,
-      // default: DefaultLauncher,
-      // awsLambda: AWSLambdaLauncher,
-    },
+      /**
+       * List of available launchers
+       * Only the default launcher is provided
+       * Feel free to create yours and add it here
+       */
+      launchers: {
+        // This is a dummy list, only one launcher exists, the default one
+        // http: HttpLauncher,
+        // repl: REPLLauncher,
+        // console: ConsoleLauncher,
+        // default: DefaultLauncher,
+        // awsLambda: AWSLambdaLauncher,
+      },
 
-    /**
-     * The current kernel used by the Application
-     */
-    kernel: 'default',
+      /**
+       * The current kernel used by the Application
+       */
+      kernel: 'default',
 
-    /**
-     * List of available kernels
-     * Only the default kernel is provided
-     * Feel free to create yours and add it here
-     */
-    kernels: {
-      // This is a dummy list, only one kernel exists, the default one
-      // http: HttpKernel,
-      // repl: REPLKernel,
-      // console: ConsoleKernel,
-      // default: DefaultKernel
+      /**
+       * List of available kernels
+       * Only the default kernel is provided
+       * Feel free to create yours and add it here
+       */
+      kernels: {
+        // This is a dummy list, only one kernel exists, the default one
+        // http: HttpKernel,
+        // repl: REPLKernel,
+        // console: ConsoleKernel,
+        // default: DefaultKernel
+      }
     }
   }
 ```
@@ -281,7 +283,7 @@ attendre que toutes les dépendances soient enregistrées.
 ### Liste des événements du cycle de vie de l'application
 
 Ces événements sont lancés l'un après l'autre à chaque changement d'état de l'application. 
-Il faut utiliser le paramètre `hookListeners` du contexte afin de les écouter.
+Il faut utiliser le paramètre `hookListeners` de l'objet de configurations afin de les écouter.
 
 **Important:** Les dépendances du service container sont disponibles uniquement après l'événement `Registered` et avant `Terminate`, toute tentative d'accès
 à un élément du container lancera une exception. Voir le tableau ci-dessous.

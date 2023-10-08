@@ -17,19 +17,20 @@ import { ApplicationException } from './exceptions/ApplicationException.mjs'
 import { Container } from '@stone-js/service-container'
 import { ExceptionHandler } from './ExceptionHandler.mjs'
 import { Macroable } from '@stone-js/macroable'
+import { ConfigurationManager } from '@stone-js/configuration-manager'
 
 /**
  * Class representing an Application.
  *
- * @version 0.0.1
+ * @version 1.0.0
  * @author Mr. Stone <pierre.evens16@gmail.com>
  */
 export class Application extends Macroable {
-  static VERSION = '0.0.1'
+  static VERSION = '1.0.0'
 
   #booted
+  #config
   #kernels
-  #context
   #appModule
   #providers
   #container
@@ -40,37 +41,38 @@ export class Application extends Macroable {
   /**
    * Create an application.
    *
-   * @param {Object} context - The application context.
+   * @param {Object} [configurations={}] - The application configurations.
    */
-  constructor (context = null) {
+  constructor (configurations = {}) {
+    super()
+
     this.#booted = false
     this.#kernels = new Map()
     this.#providers = new Set()
-    this.#context = context ?? {}
     this.#hasBeenBootstrapped = false
     this.#registeredProviders = new Set()
 
-    this.#registerBaseBindings()
+    this.#registerBaseBindings(configurations)
   }
 
   /**
    * Launch the application with a specific launcher.
    *
-   * @param  {Object} [context={}] - The application context.
+   * @param  {Object} [configurations={}] - The application configurations.
    * @return {any}
    * @static
    */
-  static launch (context = {}) {
-    context = typeof context === 'function'
-      ? { app: context }
-      : (context ?? {})
+  static launch (configurations = {}) {
+    configurations = typeof configurations === 'function'
+      ? { app: { appModule: configurations } }
+      : (configurations ?? {})
 
-    context.launcher ??= 'default'
-    const LauncherClass = context.launchers?.[context.launcher] ?? context.launchers?.default ?? Launcher
+    configurations.launcher ??= 'default'
+    const LauncherClass = configurations.launchers?.[configurations.launcher] ?? configurations.launchers?.default ?? Launcher
     const launcher = new LauncherClass()
 
     if (launcher.launch) {
-      return launcher.launch(this, context)
+      return launcher.launch(this, configurations)
     }
 
     throw new LogicException('Launcher must have a launch method')
@@ -79,12 +81,12 @@ export class Application extends Macroable {
   /**
    * Create a default instance of application.
    *
-   * @param  {Object} context - The application context.
+   * @param  {Object} configurations - The application configurations.
    * @return {Application} An Application object.
    * @static
    */
-  static default (context = {}) {
-    return new this(context)
+  static default (configurations = {}) {
+    return new this(configurations)
   }
 
   /**
@@ -95,8 +97,8 @@ export class Application extends Macroable {
     return Application.VERSION
   }
 
-  get context () {
-    return this.#context
+  get config () {
+    return this.#config
   }
 
   get container () {
@@ -116,7 +118,7 @@ export class Application extends Macroable {
   }
 
   get logger () {
-    return this.get(`app.logger.${this.context.logger}`, console)
+    return this.#config.get(`app.loggers.${this.#config.get('app.logger', 'default')}`, console)
   }
 
   get (key, fallback = null) {
@@ -139,31 +141,30 @@ export class Application extends Macroable {
   }
 
   app (appModule) {
-    return this.setApp(appModule)
+    return this.setAppModule(appModule)
   }
 
-  setApp (appModule) {
+  setAppModule (appModule) {
     this.#appModule = appModule ?? this.#appModule
     return this
   }
 
   addKernel (key, kernel) {
-    this.#context.kernels ??= {}
-    this.#context.kernels[key] = kernel
+    this.#config.set(`app.kernels.${key}`, kernel)
     return this
   }
 
   hasKernel (key) {
-    return !!this.getKernel(key)
+    return this.#config.has(`app.kernels.${key}`)
   }
 
   getKernel (key) {
-    return this.#context.kernels?.[key]
+    return this.#config.get(`app.kernels.${key}`)
   }
 
   setKernel (key) {
     if (this.hasKernel(key)) {
-      this.#context.kernel = key
+      this.#config.set('app.kernel', key)
       return this
     }
 
@@ -171,7 +172,7 @@ export class Application extends Macroable {
   }
 
   get kernel () {
-    const kernel = this.#context.kernel ?? 'default'
+    const kernel = this.#config.get('app.kernel', 'default')
 
     if (this.hasResolvedKernel(kernel)) {
       return this.getResolvedKernel(kernel)
@@ -204,7 +205,7 @@ export class Application extends Macroable {
 
   run (appModule = null) {
     return this
-      .setApp(appModule)
+      .setAppModule(appModule)
       .setup()
       .start()
   }
@@ -217,7 +218,6 @@ export class Application extends Macroable {
       .#makeKernels()
       .#makeProviders()
       .#makeBootstrappers()
-      .#makeContextItems()
 
     this.emit(Setup, new Setup(this))
     this.emit(Setup.alias, new Setup(this))
@@ -230,7 +230,7 @@ export class Application extends Macroable {
       await this.registerProvider(provider)
     }
 
-    return this.#registerContextBindings()
+    return this.#registerConfigBindings()
   }
 
   async boot () {
@@ -342,30 +342,30 @@ export class Application extends Macroable {
   }
 
   getEnvironment () {
-    return this.get('app.env')
+    return this.#config.get('app.env', 'production')
   }
 
   isDebug () {
-    return this.get('app.debug')
+    return this.#config.get('app.debug', false)
   }
 
   isLocal () {
-    return this.get('app.env') === 'local'
+    return this.getEnvironment() === 'local'
   }
 
   isProduction () {
-    return this.get('app.env') === 'production'
+    return this.getEnvironment() === 'production'
   }
 
   setLocale (locale) {
-    this.instance('app.locale', locale)
+    this.#config.set('app.locale', locale)
     this.emit(LocaleUpdated, new LocaleUpdated(locale))
     this.emit(LocaleUpdated.alias, new LocaleUpdated(locale))
     return this
   }
 
   getLocale () {
-    return this.get('app.locale', this.getFallbackLocale())
+    return this.#config.get('app.locale', this.getFallbackLocale())
   }
 
   isLocale (locale) {
@@ -373,12 +373,12 @@ export class Application extends Macroable {
   }
 
   setFallbackLocale (locale) {
-    this.instance('app.locale.fallback', locale)
+    this.#config.set('app.locale.fallback', locale)
     return this
   }
 
   getFallbackLocale () {
-    return this.get('app.locale.fallback', 'en')
+    return this.#config.get('app.locale.fallback', 'en')
   }
 
   abort (code, message, metadata = {}) {
@@ -401,40 +401,47 @@ export class Application extends Macroable {
     return this
   }
 
-  #registerBaseBindings () {
+  #registerBaseBindings (configurations) {
     this.#container = new Container()
     this.#eventEmitter = new EventEmitter()
+    this.#config = new ConfigurationManager(configurations)
 
     this
       .#container
       .instance(Application, this)
       .instance(Container, this.#container)
-      .instance('app.logger.default', console)
       .instance(EventEmitter, this.#eventEmitter)
-      .autoBinding(ExceptionHandler, this.#context.exceptionHandler ?? ExceptionHandler)
+      .instance(ConfigurationManager, this.#config)
+      .autoBinding(ExceptionHandler, this.#config.get('exceptionHandler', ExceptionHandler))
       .alias(Application, 'app')
       .alias(Container, 'container')
       .alias(EventEmitter, 'events')
       .alias(Application, 'application')
       .alias(EventEmitter, 'eventEmitter')
+      .alias(ConfigurationManager, 'config')
       .alias(ExceptionHandler, 'exceptionHandler')
+      .alias(ConfigurationManager, 'configurationManager')
 
-    this.#appModule = () => {
+    return this
+      .#registerHookListeners()
+      .setAppModule(this.#config.get('app.appModule', this.#defaultAppModule))
+  }
+
+  #defaultAppModule () {
+    return () => {
       return {
         run () {
           console.log('Hello world!')
         }
       }
     }
-
-    return this.#registerHookListeners()
   }
 
   #registerEventListeners () {
     return this
-      .#registerContextListeners()
+      .#registerConfigListeners()
       .#registerProvidersListeners()
-      .#registerContextSubscribers()
+      .#registerConfigSubscribers()
       .#registerProvidersSubscribers()
   }
 
@@ -460,12 +467,12 @@ export class Application extends Macroable {
     return this
   }
 
-  #registerContextListeners () {
-    return this.#registerEventListener(Object.entries(this.#context.listeners ?? {}))
+  #registerConfigListeners () {
+    return this.#registerEventListener(Object.entries(this.#config.get('app.listeners', {})))
   }
 
-  #registerContextSubscribers () {
-    for (const subscriber of this.#context.subscribers ?? []) {
+  #registerConfigSubscribers () {
+    for (const subscriber of this.#config.get('app.subscribers', [])) {
       this.#registerEventSubscriber(subscriber)
     }
 
@@ -473,7 +480,7 @@ export class Application extends Macroable {
   }
 
   #registerHookListeners () {
-    return this.#registerEventListener(Object.entries(this.#context.hookListeners ?? {}))
+    return this.#registerEventListener(Object.entries(this.#config.get('app.hookListeners', {})))
   }
 
   #registerEventSubscriber (eventSubscriber) {
@@ -492,23 +499,12 @@ export class Application extends Macroable {
     return this
   }
 
-  #registerContextBindings () {
-    for (const binding of this.#context.bindings ?? []) {
+  #registerConfigBindings () {
+    for (const binding of this.#config.get('app.bindings', [])) {
       this.#container.autoBinding(binding.name ?? binding.value, binding.value, binding.singleton, binding.alias)
     }
 
     return this
-  }
-
-  #makeContextItems () {
-    return this
-      .setApp(this.#context.app)
-      .registerInstance('app.debug', this.#context?.debug ?? false)
-      .registerInstance('app.locale', this.#context?.locale ?? 'en')
-      .registerInstance('app.env', this.#context?.env ?? 'production')
-      .registerInstance('app.logger', this.#context?.logger ?? 'default')
-      .registerInstance('app.kernel', this.#context?.kernel ?? 'default')
-      .registerInstance('app.locale.fallback', this.#context?.fallbackLocale ?? 'en')
   }
 
   #makeBootstrappers () {
@@ -520,7 +516,7 @@ export class Application extends Macroable {
   }
 
   #makeProviders () {
-    for (const Class of this.#context.providers ?? []) {
+    for (const Class of this.#config.get('app.providers', [])) {
       this.#providers.add(this.resolveService(Class))
     }
 
@@ -528,7 +524,7 @@ export class Application extends Macroable {
   }
 
   #makeKernels () {
-    for (const [name, Class] of Object.entries(this.#context.kernels ?? {})) {
+    for (const [name, Class] of Object.entries(this.#config.get('app.kernels', {}))) {
       this.#kernels.set(name, this.resolveService(Class))
     }
 

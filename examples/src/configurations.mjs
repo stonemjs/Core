@@ -1,4 +1,4 @@
-import { Application } from '@stone-js/core'
+import { Application } from '../../src/index.mjs'
 
 /**
  * Your application as a function
@@ -22,7 +22,8 @@ class MyApplication {
   /**
    * Destructuring Dependency Injection
    */
-  constructor ({ appName, app_name, userService }) {
+  constructor ({ appName, app_name, userService, config }) {
+    this.config = config
     this.appName = appName
     this.app_name = app_name
     this.userService = userService
@@ -31,6 +32,7 @@ class MyApplication {
   async run () {
     console.log('Hello world! My awesome application name is:', this.appName)
     console.log('And this is my users:', await this.userService.getUsers())
+    console.log('App configs with configuration manager', this.config.get('app'))
     // throw new Error('My bad')
     return `This is my output with an alias: ${this.app_name}`
   }
@@ -114,18 +116,20 @@ const bindings = [
 )
 
 /**
- * The app execution context
+ * The app execution configurations
  */
-const context = {
-  debug: true,
-  bindings,
-  app: MyApplication, // or use: myApp,
-  providers: [ AppServiceProvider ],
-  listeners: {
-    'app.started': [ AppStartedEventListener ]
-  },
-  hookListeners: {
-    'app.settingUp': [ AppSettingUpHookListener ],
+const configurations = {
+  app: {
+    debug: true,
+    bindings,
+    appModule: MyApplication, // or use: myApp,
+    providers: [ AppServiceProvider ],
+    listeners: {
+      'app.started': [ AppStartedEventListener ]
+    },
+    hookListeners: {
+      'app.settingUp': [ AppSettingUpHookListener ],
+    }
   }
 }
 
@@ -133,5 +137,5 @@ const context = {
  * Launch app
  */
 Application
-  .launch(context)
+  .launch(configurations)
   .then(output => console.log('Ouput:', output))

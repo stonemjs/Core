@@ -22,7 +22,7 @@ export class Kernel {
 
   get bootstrappers () {
     return [RegisterProviders, BootProviders]
-      .concat(this.#app.context?.bootstrappers ?? [])
+      .concat(this.#app.config.get('app.bootstrappers', []))
       .reduce((prev, curr) => prev.concat(prev.includes(curr) ? [] : [curr]), [])
   }
 

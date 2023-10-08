@@ -1,4 +1,4 @@
-import { Application } from '@stone-js/core'
+import { Application } from '../../src/index.mjs'
 
 const output = await Application.launch(({ app }) => {
   return {

@@ -6,7 +6,7 @@
   "scripts": {
     "build": "webpack",
     "start": "npm run build && node ./dist/simple.core.example.js",
-    "start:context": "npm run build && node ./dist/context.core.example.js",
+    "start:config": "npm run build && node ./dist/configurations.core.example.js",
     "dev": "npm run build && node --inspect ./dist/simple.core.example.js"
   },
   "author": "Mr Stone <pierre.evens16@gmail.com>",
