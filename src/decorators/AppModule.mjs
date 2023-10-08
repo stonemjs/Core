@@ -15,7 +15,7 @@ import deepmerge from 'deepmerge'
  * @param {AppConfiguration} [configurations={}] - The decorator congiguration keys.
  * @return {any}
  */
-export const App = (value = {}) => {
+export const AppModule = (value = {}) => {
   return (target) => {
     value ??= {}
     target.metadata = deepmerge(target.metadata ?? {}, { ...value, isMainApp: true })

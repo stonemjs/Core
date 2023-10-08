@@ -26,7 +26,8 @@ Toutes les fonctionnalités sont paramétrables, ce qui vous permet d'étendre l
 * [Launchers](#launchers)
 * [Bootstrappers](#bootstrappers)
 * [Exception handler](#exception-handler)
-* [logger](#logger)
+* [Logger](#logger)
+* [Decorators](#decorators)
 * [Api](#api)
 * [Credits](#credits)
 
@@ -221,7 +222,7 @@ La liste complète des paramètres de configurations
        * The exception handler service
        * Allowing handle, log and render exceptions within the app
        */
-      exceptionHandler: null
+      exceptionHandler: null,
 
       /**
        * Logger name bound to container
@@ -229,7 +230,7 @@ La liste complète des paramètres de configurations
        * Any other logger must be registered in the service container
        * Default: console
        */
-      logger: 'default'
+      logger: 'default',
 
       /**
        * The current launcher used to launch your application
