@@ -6,6 +6,7 @@
 ![Maintenance](https://img.shields.io/maintenance/yes/2023)
 
 StoneJS Core vous offre un environnement simple et puissant pour créer vos projets javascript, qu'il soit un simple projet, une librairie ou une application backend, frontend ou ligne de commande (CLI).
+
 Il met à votre disposition un conteneur de service pour gérer vos dépendances, un gestionnaire d'événement pour gérer vos événements, 
 un noyau pour executer votre application et un lanceur pour lancer votre application dans l'environnement approprié (console, browser, http, Cloud, AWS Lambda, etc...).
 Toutes les fonctionnalités sont paramétrables, ce qui vous permet d'étendre les fonctionnalités ou d'en inclure d'autres facilement.
