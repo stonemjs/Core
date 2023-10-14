@@ -4,21 +4,17 @@ import { Application } from '../../src/index.mjs'
  * Your application as a function
  * Destructuring Dependency Injection
  */
-const myApp = ({ appName, app_name, userService }) => {
-  return {
-    async run () {
-      console.log('Hello world! My awesome application name is:', appName)
-      console.log('And this is my users:', await userService.getUsers())
+const myApp = async ({ appName, app_name, userService }) => {
+  console.log('Hello world! My awesome application name is:', appName)
+  console.log('And this is my users:', await userService.getUsers())
 
-      return `This is my output with an alias: ${app_name}`
-    }
-  }
+  return `This is my output with an alias from function: ${app_name}`
 }
 
 /**
  * Your application as a class
  */
-class MyApplication {
+class AppModule {
   /**
    * Destructuring Dependency Injection
    */
@@ -34,7 +30,7 @@ class MyApplication {
     console.log('And this is my users:', await this.userService.getUsers())
     console.log('App configs with configuration manager', this.config.get('app'))
     // throw new Error('My bad')
-    return `This is my output with an alias: ${this.app_name}`
+    return `This is my output with an alias from class: ${this.app_name}`
   }
 }
 
@@ -122,7 +118,7 @@ const configurations = {
   app: {
     debug: true,
     bindings,
-    appModule: MyApplication, // or use: myApp,
+    appModule: AppModule, // or use: myApp,
     providers: [ AppServiceProvider ],
     listeners: {
       'app.started': [ AppStartedEventListener ]

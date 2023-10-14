@@ -73,8 +73,13 @@ $ yarn add @stone-js/core
 ## Utilisation
 
 Vous pouvez lancer votre application via la méthode statique `Application.launch`, il prend soit votre application ou objet de configurations en paramètre.
-Votre application peut être une function ou une classe, et doit avoir la méthode `run` sans quoi une exception sera lancée.
-La methode `run` doit avoir la logique pour lancer votre application et peut être asynchrone, si elle retourne une valeur, elle sera retourné par la methode `Application.launch`. Si votre application est une function elle doit retourner un objet contenant la méthode `run`.
+Votre application peut être une function ou une classe, et peut avoir une méthode `run`.
+
+### La methode `run`
+
+La methode `run` sert à faire certaines initialisations au sein de votre application et peut être asynchrone, 
+ensuite la valeur retournée par celle-ci sera retournée par la methode `Application.launch`, utile pour exposer un API.
+Si votre application est une function elle peut retourner un objet contenant la méthode `run`.
 
 **Important:** `Application.launch` retourne toujours une Promesse(`Promise`).
 

@@ -6,7 +6,7 @@ export class Kernel {
   #app
   #endedAt
   #startedAt
-  #resolvedUserApp
+  #resolvedAppModule
 
   constructor ({ app }) {
     this.#app = app
@@ -14,6 +14,10 @@ export class Kernel {
 
   get app () {
     return this.#app
+  }
+
+  get resolvedAppModule () {
+    return this.#resolvedAppModule
   }
 
   get executionDuration () {
@@ -30,20 +34,16 @@ export class Kernel {
     const App = this.#app.appModule
 
     if (this._isFunction(App)) {
-      await this.bootstrap()
-
-      this.#startedAt = Date.now()
-      this.#resolvedUserApp = this._isClass(App) ? new App(this.#app.container) : App(this.#app.container)
-
-      if (!this.#resolvedUserApp?.run) {
-        throw new LogicException('The app must have a `run` method')
-      }
-
       let output
 
+      this.#startedAt = Date.now()
+
+      await this.bootstrap()
+
       try {
+        this.#resolvedAppModule = this._isClass(App) ? new App(this.#app.container) : await App(this.#app.container)
         await this._beforeRunning()
-        output = await this.#resolvedUserApp.run()
+        output = this.#resolvedAppModule?.run ? (await this.#resolvedAppModule.run()) : this.#resolvedAppModule
       } catch (error) {
         await this._reportException(error)
         output = await this._renderException(error)
@@ -64,8 +64,8 @@ export class Kernel {
   }
 
   terminate () {
-    if (this.#resolvedUserApp && this.#resolvedUserApp.terminate) {
-      return this.#resolvedUserApp.terminate()
+    if (this.#resolvedAppModule && this.#resolvedAppModule.terminate) {
+      return this.#resolvedAppModule.terminate()
     }
   }
 
