@@ -386,6 +386,7 @@ export class Application extends Macroable {
   }
 
   clear () {
+    this.#config.clear()
     this.#container.clear()
     this.#eventEmitter.removeAllListeners()
 
