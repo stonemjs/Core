@@ -23,7 +23,7 @@ Toutes les fonctionnalités sont paramétrables, ce qui vous permet d'étendre l
 * [Providers](#providers)
 * [Evenements](#evenements)
 * [Kernels](#kernels)
-* [Launchers](#launchers)
+* [Adapters](#adapters)
 * [Bootstrappers](#bootstrappers)
 * [Exception handler](#exception-handler)
 * [Logger](#logger)
@@ -233,22 +233,22 @@ La liste complète des paramètres de configurations
       logger: 'default',
 
       /**
-       * The current launcher used to launch your application
+       * The current adapter used to run your application
        */
-      launcher: 'default',
+      adapter: 'default',
 
       /**
-       * List of available launchers
-       * Only the default launcher is provided
+       * List of available adapters
+       * Only the default adapter is provided
        * Feel free to create yours and add it here
        */
-      launchers: {
-        // This is a dummy list, only one launcher exists, the default one
-        // http: HttpLauncher,
-        // repl: REPLLauncher,
-        // console: ConsoleLauncher,
-        // default: DefaultLauncher,
-        // awsLambda: AWSLambdaLauncher,
+      adapters: {
+        // This is a dummy list, only one adapter exists, the default one
+        // http: HttpAdapter,
+        // repl: REPLAdapter,
+        // console: ConsoleAdapter,
+        // default: Adapter,
+        // awsLambda: AWSLambdaAdapter,
       },
 
       /**
@@ -315,7 +315,7 @@ Il faut utiliser le paramètre `hookListeners` de l'objet de configurations afin
 ## Kernels
 
 
-## Launchers
+## Adapters
 
 
 ## Bootstrappers

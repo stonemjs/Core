@@ -3,7 +3,7 @@ export { Listener } from './decorators/Listener.mjs'
 export { Subscriber } from './decorators/Subscriber.mjs'
 
 export { Kernel } from './Kernel.mjs'
-export { Launcher } from './Launcher.mjs'
+export { Adapter } from './Adapter.mjs'
 export { Application } from './Application.mjs'
 export { EventEmitter } from './EventEmitter.mjs'
 export { Booted } from './events/Booted.mjs'

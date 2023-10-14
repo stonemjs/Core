@@ -5,7 +5,7 @@ import deepmerge from 'deepmerge'
  *
  * @typedef  {Object} AppConfiguration
  * @property {string} kernel
- * @property {string} launcher
+ * @property {string} adapter
  * @property {string} logger
  */
 

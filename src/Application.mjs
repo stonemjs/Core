@@ -12,7 +12,7 @@ import { SettingUp } from './events/SettingUp.mjs'
 import { Setup } from './events/Setup.mjs'
 import { LocaleUpdated } from './events/LocaleUpdated.mjs'
 import { Kernel } from './Kernel.mjs'
-import { Launcher } from './Launcher.mjs'
+import { Adapter } from './Adapter.mjs'
 import { ApplicationException } from './exceptions/ApplicationException.mjs'
 import { Container } from '@stone-js/service-container'
 import { ExceptionHandler } from './ExceptionHandler.mjs'
@@ -56,7 +56,7 @@ export class Application extends Macroable {
   }
 
   /**
-   * Launch the application with a specific launcher.
+   * Launch the application with a specific adapter.
    *
    * @param  {Object} [configurations={}] - The application configurations.
    * @return {any}
@@ -67,15 +67,15 @@ export class Application extends Macroable {
       ? { app: { appModule: configurations } }
       : (configurations ?? {})
 
-    configurations.launcher ??= 'default'
-    const LauncherClass = configurations.launchers?.[configurations.launcher] ?? configurations.launchers?.default ?? Launcher
-    const launcher = new LauncherClass()
+    configurations.adapter ??= 'default'
+    const CurrentAdapter = configurations.adapters?.[configurations.adapter] ?? configurations.adapters?.default ?? Adapter
+    const adapter = new CurrentAdapter()
 
-    if (launcher.launch) {
-      return launcher.launch(this, configurations)
+    if (adapter.run) {
+      return adapter.run(this, configurations)
     }
 
-    throw new LogicException('Launcher must have a launch method')
+    throw new LogicException('Adapter must have a run method')
   }
 
   /**

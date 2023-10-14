@@ -1,5 +1,5 @@
 /**
- * Class representing a ApplicationException.
+ * Class representing an ApplicationException.
  */
 export class ApplicationException extends Error {
   static CODE = 'CORE-500'
