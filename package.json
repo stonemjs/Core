@@ -2,25 +2,25 @@
   "name": "@stone-js/core",
   "version": "1.0.2",
   "description": "StoneJS core",
-  "main": "./src/index.mjs",
-  "module": "./src/index.mjs",
-  "types": "./dist/index.d.mts",
-  "typings": "./dist/index.d.mts",
-  "repository": "git@github.com:stonemjs/core.git",
   "author": "Mr. Stone <pierre.evens16@gmail.com>",
   "license": "MIT",
-  "files": [
-    "/src",
-    "/dist"
-  ],
-  "keywords": [
-    "Core",
-    "StoneJS"
-  ],
+  "repository": "git@github.com:stonemjs/core.git",
   "homepage": "https://github.com/stonemjs/core#readme",
   "bugs": {
     "url": "https://github.com/stonemjs/core/issues"
   },
+  "keywords": [
+    "Core",
+    "StoneJS"
+  ],
+  "main": "./src/index.mjs",
+  "module": "./src/index.mjs",
+  "types": "./dist/index.d.mts",
+  "typings": "./dist/index.d.mts",
+  "files": [
+    "/src",
+    "/dist"
+  ],
   "exports": {
     ".": {
       "import": {
@@ -35,9 +35,11 @@
   },
   "scripts": {
     "types": "tsc",
-    "lint": "eslint src --ext mjs",
-    "lint:test": "eslint tests --ext mjs",
-    "lint:fix": "eslint --fix --ext mjs src/ tests/",
+    "lint": "standard src",
+    "lint:test": "standard --env mocha tests",
+    "lint:fix": "standard --fix src tests",
+    "predoc": "rimraf docs",
+    "doc": "jsdoc src/index.js -d docs",
     "build": "npm run lint && webpack --env prod && npm run types",
     "build:dev": "npm run lint && webpack --env dev && npm run types",
     "release": "npm run test:summary && npm run build && npm publish --access public",
@@ -46,6 +48,12 @@
     "test:lcov": "cross-env NODE_ENV=test nyc --reporter=lcovonly --reporter=text npm run test",
     "test:summary": "cross-env NODE_ENV=test nyc --reporter=text-summary npm run test",
     "test:text": "cross-env NODE_ENV=test nyc --reporter=text npm run test"
+  },
+  "dependencies": {
+    "@stone-js/configuration-manager": "^1.0.1",
+    "@stone-js/macroable": "^1.0.0",
+    "@stone-js/service-container": "^1.0.1",
+    "deepmerge": "^4.3.1"
   },
   "devDependencies": {
     "@babel/core": "^7.22.20",
@@ -57,23 +65,22 @@
     "chai": "^4.3.8",
     "clean-webpack-plugin": "^4.0.0",
     "cross-env": "^7.0.3",
-    "eslint": "^7.12.1",
-    "eslint-config-standard": "^16.0.3",
-    "eslint-plugin-import": "^2.25.2",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-promise": "^5.1.0",
+    "jsdoc": "^4.0.2",
+    "standard": "^17.1.0",
     "mocha": "^10.2.0",
     "node-polyfill-webpack-plugin": "^2.0.1",
     "nyc": "^15.1.0",
+    "rimraf": "^5.0.5",
     "sinon": "^16.0.0",
     "typescript": "^5.2.2",
     "webpack": "^5.88.2",
     "webpack-cli": "^5.1.4"
   },
-  "dependencies": {
-    "@stone-js/configuration-manager": "^1.0.1",
-    "@stone-js/macroable": "^1.0.0",
-    "@stone-js/service-container": "^1.0.1",
-    "deepmerge": "^4.3.1"
+  "standard": {
+    "parser": "@babel/eslint-parser",
+    "globals": [
+      "describe",
+      "it"
+    ]
   }
 }
