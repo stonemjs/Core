@@ -54,7 +54,7 @@ export class Kernel {
       return await this._afterRunning(output)
     }
 
-    throw new LogicException('The app must be a Class or a function')
+    throw new LogicException('The app module must be a Class or a function')
   }
 
   bootstrap () {
@@ -64,7 +64,7 @@ export class Kernel {
   }
 
   terminate () {
-    if (this.#resolvedAppModule && this.#resolvedAppModule.terminate) {
+    if (this.#resolvedAppModule?.terminate) {
       return this.#resolvedAppModule.terminate()
     }
   }
