@@ -1,9 +1,9 @@
-import { Application } from '../../src/index.mjs'
+import { StoneFactory } from '../../src/index.mjs'
 
-const output = await Application.launch(async ({ app }) => {
-  console.log('Binding keys', [...app.container.bindings.keys()])
-  console.log('alias keys', [...app.container.aliases.entries()])
-  console.log('Hello world! This is my awesome application with a default locale:', app.getLocale())
+const output = await StoneFactory.createAndRun(async ({ ctx, container }) => {
+  console.log('Binding keys', [...container.bindings.keys()])
+  console.log('alias keys', [...container.aliases.entries()])
+  console.log('Hello world! This is my awesome application with a default locale:', ctx.getLocale())
   // throw new Error('My errrrroooooorrr')
   return 'This is my output' // La valeur de retour
 })

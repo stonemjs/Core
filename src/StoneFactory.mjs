@@ -1,13 +1,13 @@
+import { Event } from './Event.mjs'
 import { Kernel } from './Kernel.mjs'
 import { Adapter } from './Adapter.mjs'
-import { Event } from './Event.mjs'
 import { Macroable } from '@stone-js/macroable'
 import { EventEmitter } from './EventEmitter.mjs'
 import { Container } from '@stone-js/service-container'
 import { ExceptionHandler } from './ExceptionHandler.mjs'
 import { LogicException } from './exceptions/LogicException.mjs'
-import { ConfigurationManager } from '@stone-js/configuration-manager'
 import { RuntimeException } from './exceptions/RuntimeException.mjs'
+import { ConfigurationManager } from '@stone-js/configuration-manager'
 
 /**
  * Class representing StoneFactory.
@@ -59,7 +59,7 @@ export class StoneFactory extends Macroable {
   }
 
   /**
-   * Create application with a specific adapter.
+   * Create and run application with a specific adapter.
    *
    * @param  {Function|Function.constructor} AppModule - The application module.
    * @param  {Object} [options={}] - The application configurations.
@@ -68,8 +68,8 @@ export class StoneFactory extends Macroable {
    */
   static createAndRun (AppModule, options = {}) {
     const config = new ConfigurationManager(options ?? {})
-    const adapter = config.get('app.adapter', 'default')
-    const CurrentAdapter = config.get(`app.adapters.${adapter}`, Adapter)
+    const adapterName = config.get('app.adapter', 'default')
+    const CurrentAdapter = config.get(`app.adapters.${adapterName}`, Adapter)
 
     if (CurrentAdapter.prototype.run) {
       return CurrentAdapter.create(AppModule, config).run()

@@ -1,4 +1,4 @@
-import { Application } from '../../src/index.mjs'
+import { StoneFactory } from '../../src/index.mjs'
 
 /**
  * Your application as a function
@@ -51,12 +51,12 @@ class UserService {
  * Service provider
  */
 class AppServiceProvider {
-  constructor ({ app }) {
-    this.app = app
+  constructor ({ ctx }) {
+    this.ctx = ctx
   }
 
   register () {
-    this.app.registerService(UserService, true, ['userService'])
+    this.ctx.registerService(UserService, true, ['userService'])
   }
 }
 
@@ -84,12 +84,12 @@ class AppSettingUpHookListener {
   /**
    * Only [app, container, EventEmitter, ExceptionHandler] are availables
    */
-  constructor ({ app }) {
-    this.app = app
+  constructor ({ ctx }) {
+    this.ctx = ctx
   }
 
   handle(event) {
-    console.log(`MyApp version(${this.app.version}) started event from HookListener`)
+    console.log(`MyApp version(${this.ctx.version}) started event from HookListener`)
     console.log('The hook event name', event.name)
   }
 }
@@ -118,7 +118,6 @@ const configurations = {
   app: {
     debug: true,
     bindings,
-    appModule: AppModule, // or use: myApp,
     providers: [ AppServiceProvider ],
     listeners: {
       'app.started': [ AppStartedEventListener ]
@@ -132,6 +131,6 @@ const configurations = {
 /**
  * Launch app
  */
-Application
-  .launch(configurations)
+StoneFactory
+  .createAndRun(AppModule, configurations)
   .then(output => console.log('Ouput:', output))
