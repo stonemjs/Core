@@ -1,0 +1,17 @@
+{
+  "roots": ["src/", "tests/"],
+  "transform": {
+    "\\.m?[jt]sx?$": "babel-jest"
+  },
+  "collectCoverageFrom": [
+    "src/**/*.{js,mjs}",
+    "!src/index.mjs"
+  ],
+  "coverageThreshold": {
+    "global": {
+      "lines": 80,
+      "branches": 80,
+      "functions": 80
+    }
+  }
+}

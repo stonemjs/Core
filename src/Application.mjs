@@ -41,7 +41,7 @@ export class Application extends Macroable {
   /**
    * Create an application.
    *
-   * @param {Object} [configurations={}] - The application configurations.
+   * @param {Object|ConfigurationManager} [configurations={}] - The application configurations.
    */
   constructor (configurations = {}) {
     super()
@@ -72,7 +72,7 @@ export class Application extends Macroable {
     const adapter = new CurrentAdapter()
 
     if (adapter.run) {
-      return adapter.run(this, configurations)
+      return adapter.run(this, new ConfigurationManager(configurations))
     }
 
     throw new LogicException('Adapter must have a run method')
@@ -122,7 +122,13 @@ export class Application extends Macroable {
   }
 
   get (key, fallback = null) {
-    return this.#container.bound(key) ? this.#container.make(key) : fallback
+    return this.#container.bound(key)
+      ? this.#container.make(key)
+      : this.#config.get(key, fallback)
+  }
+
+  has (key) {
+    return this.#container.bound(key) || this.#config.has(key)
   }
 
   on (eventName, listener) {
@@ -405,7 +411,7 @@ export class Application extends Macroable {
   #registerBaseBindings (configurations) {
     this.#container = new Container()
     this.#eventEmitter = new EventEmitter()
-    this.#config = new ConfigurationManager(configurations)
+    this.#config = configurations instanceof ConfigurationManager ? configurations : new ConfigurationManager(configurations)
 
     this
       .#container

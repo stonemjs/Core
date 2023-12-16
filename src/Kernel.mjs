@@ -27,7 +27,7 @@ export class Kernel {
   get bootstrappers () {
     return [RegisterProviders, BootProviders]
       .concat(this.#app.config.get('app.bootstrappers', []))
-      .reduce((prev, curr) => prev.concat(prev.includes(curr) ? [] : [curr]), [])
+      .reduce((prev, curr) => prev.concat(prev.includes(curr) ? [] : curr), [])
   }
 
   async run () {
@@ -41,8 +41,8 @@ export class Kernel {
       await this.bootstrap()
 
       try {
-        this.#resolvedAppModule = this._isClass(App) ? new App(this.#app.container) : await App(this.#app.container)
         await this._beforeRunning()
+        this.#resolvedAppModule = this._isClass(App) ? new App(this.#app.container) : await App(this.#app.container)
         output = this.#resolvedAppModule?.run ? (await this.#resolvedAppModule.run()) : this.#resolvedAppModule
       } catch (error) {
         await this._reportException(error)

@@ -11,6 +11,9 @@ dist-ssr
 *.local
 stone-js-core-*
 
+# Types
+types/
+
 # Istanbul Code coverage
 coverage
 .nyc_output
