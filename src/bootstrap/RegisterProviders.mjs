@@ -1,5 +1,5 @@
 export class RegisterProviders {
-  bootstrap ({ app }) {
-    return app.register()
+  bootstrap ({ context }) {
+    return context.register()
   }
 }

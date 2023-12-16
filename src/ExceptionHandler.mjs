@@ -1,13 +1,13 @@
 export class ExceptionHandler {
-  #app
   #levels
+  #context
   #dontReport
   #withoutDuplicates
   #reportedException
   #internalDontReport
 
-  constructor ({ app }) {
-    this.#app = app
+  constructor ({ context }) {
+    this.#context = context
 
     this.#levels = {}
     this.#dontReport = []
@@ -16,13 +16,8 @@ export class ExceptionHandler {
     this.#reportedException = new Set()
   }
 
-  get app () {
-    return this.#app
-  }
-
   level (Class, level) {
     this.#levels[Class] = level
-
     return this
   }
 
@@ -57,9 +52,9 @@ export class ExceptionHandler {
 
     const exceptionContext = this._buildExceptionContext(exception)
 
-    this.app.logger[level]
-      ? this.app.logger[level](exceptionContext, exception.message)
-      : this.app.logger.error(exceptionContext, exception.message)
+    this.#context.logger[level]
+      ? this.#context.logger[level](exceptionContext, exception.message)
+      : this.#context.logger.error(exceptionContext, exception.message)
   }
 
   _buildExceptionContext (exception) {
@@ -75,7 +70,7 @@ export class ExceptionHandler {
     }
 
     return [...this.#dontReport, ...this.#internalDontReport]
-      .reduce((prev, curr) => exception instanceof curr ? false : prev, true)
+      .reduce((prev, Class) => exception instanceof Class ? false : prev, true)
   }
 
   async render (exception) {

@@ -18,7 +18,7 @@ import deepmerge from 'deepmerge'
 export const AppModule = (value = {}) => {
   return (target) => {
     value ??= {}
-    target.metadata = deepmerge(target.metadata ?? {}, { ...value, isMainApp: true })
+    target.metadata = deepmerge(target.metadata ?? {}, { ...value, isAppModule: true })
     return target
   }
 }

@@ -1,5 +1,5 @@
 export class BootProviders {
-  bootstrap ({ app }) {
-    return app.boot()
+  bootstrap ({ context }) {
+    return context.boot()
   }
 }

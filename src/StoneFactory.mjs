@@ -1,31 +1,21 @@
-import { Booted } from './events/Booted.mjs'
-import { EventEmitter } from './EventEmitter.mjs'
-import { Registered } from './events/Registered.mjs'
-import { Registering } from './events/Registering.mjs'
-import { Started } from './events/Started.mjs'
-import { Starting } from './events/Starting.mjs'
-import { Terminate } from './events/Terminate.mjs'
-import { Terminating } from './events/Terminating.mjs'
-import { Booting } from './events/Booting.mjs'
-import { LogicException } from './exceptions/LogicException.mjs'
-import { SettingUp } from './events/SettingUp.mjs'
-import { Setup } from './events/Setup.mjs'
-import { LocaleUpdated } from './events/LocaleUpdated.mjs'
 import { Kernel } from './Kernel.mjs'
 import { Adapter } from './Adapter.mjs'
-import { ApplicationException } from './exceptions/ApplicationException.mjs'
+import { Event } from './Event.mjs'
+import { Macroable } from '@stone-js/macroable'
+import { EventEmitter } from './EventEmitter.mjs'
 import { Container } from '@stone-js/service-container'
 import { ExceptionHandler } from './ExceptionHandler.mjs'
-import { Macroable } from '@stone-js/macroable'
+import { LogicException } from './exceptions/LogicException.mjs'
 import { ConfigurationManager } from '@stone-js/configuration-manager'
+import { RuntimeException } from './exceptions/RuntimeException.mjs'
 
 /**
- * Class representing an Application.
+ * Class representing StoneFactory.
  *
  * @version 1.0.0
  * @author Mr. Stone <pierre.evens16@gmail.com>
  */
-export class Application extends Macroable {
+export class StoneFactory extends Macroable {
   static VERSION = '1.0.0'
 
   #booted
@@ -41,9 +31,10 @@ export class Application extends Macroable {
   /**
    * Create an application.
    *
-   * @param {Object|ConfigurationManager} [configurations={}] - The application configurations.
+   * @param {Function|Function.constructor} AppModule           - The application module.
+   * @param {Object|ConfigurationManager}   [configurations={}] - The application configurations.
    */
-  constructor (configurations = {}) {
+  constructor (AppModule, configurations = {}) {
     super()
 
     this.#booted = false
@@ -52,41 +43,39 @@ export class Application extends Macroable {
     this.#hasBeenBootstrapped = false
     this.#registeredProviders = new Set()
 
-    this.#registerBaseBindings(configurations)
+    this.#registerBaseBindings(AppModule, configurations)
   }
 
   /**
-   * Launch the application with a specific adapter.
+   * Create an instance of StoneFactory.
    *
-   * @param  {Object} [configurations={}] - The application configurations.
+   * @param  {Function|Function.constructor} AppModule      - The application module.
+   * @param  {Object|ConfigurationManager}   configurations - The application configurations.
+   * @return {StoneFactory} An Application object.
+   * @static
+   */
+  static create (AppModule, configurations = {}) {
+    return new this(AppModule, configurations)
+  }
+
+  /**
+   * Create application with a specific adapter.
+   *
+   * @param  {Function|Function.constructor} AppModule - The application module.
+   * @param  {Object} [options={}] - The application configurations.
    * @return {any}
    * @static
    */
-  static launch (configurations = {}) {
-    configurations = typeof configurations === 'function'
-      ? { app: { appModule: configurations } }
-      : (configurations ?? {})
+  static createAndRun (AppModule, options = {}) {
+    const config = new ConfigurationManager(options ?? {})
+    const adapter = config.get('app.adapter', 'default')
+    const CurrentAdapter = config.get(`app.adapters.${adapter}`, Adapter)
 
-    configurations.adapter ??= 'default'
-    const CurrentAdapter = configurations.adapters?.[configurations.adapter] ?? configurations.adapters?.default ?? Adapter
-    const adapter = new CurrentAdapter()
-
-    if (adapter.run) {
-      return adapter.run(this, new ConfigurationManager(configurations))
+    if (CurrentAdapter.prototype.run) {
+      return CurrentAdapter.create(AppModule, config).run()
     }
 
     throw new LogicException('Adapter must have a run method')
-  }
-
-  /**
-   * Create a default instance of application.
-   *
-   * @param  {Object} configurations - The application configurations.
-   * @return {Application} An Application object.
-   * @static
-   */
-  static default (configurations = {}) {
-    return new this(configurations)
   }
 
   /**
@@ -94,7 +83,7 @@ export class Application extends Macroable {
    * @return {string} The version.
    */
   get version () {
-    return Application.VERSION
+    return StoneFactory.VERSION
   }
 
   get config () {
@@ -113,12 +102,23 @@ export class Application extends Macroable {
     return this.#hasBeenBootstrapped
   }
 
+  get kernel () {
+    const kernel = this.#config.get('app.kernel', 'default')
+
+    if (this.hasResolvedKernel(kernel)) {
+      return this.getResolvedKernel(kernel)
+    }
+
+    throw new RuntimeException(`No kernel resolved with this name ${kernel}`)
+  }
+
   get appModule () {
     return this.#appModule
   }
 
   get logger () {
-    return this.#config.get(`app.loggers.${this.#config.get('app.logger', 'default')}`, console)
+    const logger = this.#config.get('app.logger', 'default')
+    return this.#config.get(`app.loggers.${logger}`, console)
   }
 
   get (key, fallback = null) {
@@ -146,12 +146,12 @@ export class Application extends Macroable {
     return this
   }
 
-  app (appModule) {
-    return this.setAppModule(appModule)
+  app (AppModule) {
+    return this.setAppModule(AppModule)
   }
 
-  setAppModule (appModule) {
-    this.#appModule = appModule ?? this.#appModule
+  setAppModule (AppModule) {
+    this.#appModule = AppModule ?? this.#appModule
     return this
   }
 
@@ -177,16 +177,6 @@ export class Application extends Macroable {
     throw new LogicException(`No kernel registered with this name ${key}`)
   }
 
-  get kernel () {
-    const kernel = this.#config.get('app.kernel', 'default')
-
-    if (this.hasResolvedKernel(kernel)) {
-      return this.getResolvedKernel(kernel)
-    }
-
-    throw new LogicException(`No kernel resolved with this name ${kernel}`)
-  }
-
   hasResolvedKernel (key) {
     return this.#kernels.has(key)
   }
@@ -209,26 +199,22 @@ export class Application extends Macroable {
     return this
   }
 
-  run (appModule = null) {
+  run (AppModule = null) {
     return this
-      .setAppModule(appModule)
+      .setAppModule(AppModule)
       .setup()
       .start()
   }
 
   setup () {
-    this.emit(SettingUp, new SettingUp(this))
-    this.emit(SettingUp.alias, new SettingUp(this))
+    this.emit(Event.SETTING_UP_HOOK, new Event(Event.SETTING_UP_HOOK, this))
 
     this
       .#makeKernels()
       .#makeProviders()
       .#makeBootstrappers()
 
-    this.emit(Setup, new Setup(this))
-    this.emit(Setup.alias, new Setup(this))
-
-    return this
+    return this.emit(Event.SETUP_HOOK, new Event(Event.SETUP_HOOK, this))
   }
 
   async register () {
@@ -254,13 +240,11 @@ export class Application extends Macroable {
   }
 
   async start () {
-    this.emit(Starting, new Starting(this))
-    this.emit(Starting.alias, new Starting(this))
+    this.emit(Event.STARTING_HOOK, new Event(Event.STARTING_HOOK, this))
 
     const output = await this.kernel.run()
 
-    this.emit(Started, new Started(this, output))
-    this.emit(Started.alias, new Started(this, output))
+    this.emit(Event.STARTED_HOOK, new Event(Event.STARTED_HOOK, this, output))
 
     return output
   }
@@ -270,8 +254,7 @@ export class Application extends Macroable {
   }
 
   async terminate () {
-    this.emit(Terminating, new Terminating(this))
-    this.emit(Terminating.alias, new Terminating(this))
+    this.emit(Event.TERMINATING_HOOK, new Event(Event.TERMINATING_HOOK, this))
 
     if (this.kernel.terminate) {
       await this.kernel.terminate()
@@ -285,10 +268,7 @@ export class Application extends Macroable {
 
     this.clear()
 
-    this.emit(Terminate, new Terminate(this))
-    this.emit(Terminate.alias, new Terminate(this))
-
-    return this
+    return this.emit(Event.TERMINATE_HOOK, new Event(Event.TERMINATE_HOOK, this))
   }
 
   async bootstrapWith (bootstrappers) {
@@ -308,18 +288,17 @@ export class Application extends Macroable {
   }
 
   async registerProvider (provider, force = false) {
+    if (!provider.register) {
+      throw new LogicException(`This provider ${provider.toString()} must contain a register method`)
+    }
+
     if (this.providerIsRegistered(provider) && !force) {
       return this
     }
 
-    this.emit(Registering, new Registering(this, provider))
-    this.emit(Registering.alias, new Registering(this, provider))
+    this.emit(Event.PROVIDER_REGISTERING, new Event(Event.PROVIDER_REGISTERING, this, provider))
 
-    if (provider.register) {
-      await provider.register()
-    } else {
-      throw new LogicException(`This provider ${provider.toString()} must contain a register method`)
-    }
+    await provider.register()
 
     this.#markAsRegistered(provider)
 
@@ -327,24 +306,17 @@ export class Application extends Macroable {
       await this.bootProvider(provider)
     }
 
-    this.emit(Registered, new Registered(this, provider))
-    this.emit(Registered.alias, new Registered(this, provider))
-
-    return this
+    return this.emit(Event.PROVIDER_REGISTERED, new Event(Event.PROVIDER_REGISTERED, this, provider))
   }
 
   async bootProvider (provider) {
     if (!provider.boot) return this
 
-    this.emit(Booting, new Booting(this, provider))
-    this.emit(Booting.alias, new Booting(this, provider))
+    this.emit(Event.PROVIDER_BOOTING, new Event(Event.PROVIDER_BOOTING, this, provider))
 
     await provider.boot()
 
-    this.emit(Booted, new Booted(this, provider))
-    this.emit(Booted.alias, new Booted(this, provider))
-
-    return this
+    return this.emit(Event.PROVIDER_BOOTED, new Event(Event.PROVIDER_BOOTED, this, provider))
   }
 
   getEnvironment () {
@@ -355,23 +327,22 @@ export class Application extends Macroable {
     return this.#config.get('app.debug', false)
   }
 
-  isLocal () {
-    return this.getEnvironment() === 'local'
+  isEnv (env) {
+    return this.getEnvironment() === env
   }
 
   isProduction () {
-    return this.getEnvironment() === 'production'
+    return this.isEnv('production')
   }
 
   setLocale (locale) {
-    this.#config.set('app.locale', locale)
-    this.emit(LocaleUpdated, new LocaleUpdated(locale))
-    this.emit(LocaleUpdated.alias, new LocaleUpdated(locale))
+    this.#config.set('app.locale.code', locale)
+    this.emit(Event.LOCALE_UPDATED, new Event(Event.LOCALE_UPDATED, this, locale))
     return this
   }
 
   getLocale () {
-    return this.#config.get('app.locale', this.getFallbackLocale())
+    return this.#config.get('app.locale.code', this.getFallbackLocale())
   }
 
   isLocale (locale) {
@@ -388,7 +359,7 @@ export class Application extends Macroable {
   }
 
   abort (code, message, metadata = {}) {
-    throw new ApplicationException(message, code, metadata)
+    throw new RuntimeException(message, code, metadata)
   }
 
   clear () {
@@ -408,49 +379,37 @@ export class Application extends Macroable {
     return this
   }
 
-  #registerBaseBindings (configurations) {
+  #registerBaseBindings (AppModule, configurations) {
     this.#container = new Container()
     this.#eventEmitter = new EventEmitter()
     this.#config = configurations instanceof ConfigurationManager ? configurations : new ConfigurationManager(configurations)
 
     this
       .#container
-      .instance(Application, this)
+      .instance(StoneFactory, this)
       .instance(Container, this.#container)
       .instance(EventEmitter, this.#eventEmitter)
       .instance(ConfigurationManager, this.#config)
       .autoBinding(ExceptionHandler, this.#config.get('exceptionHandler', ExceptionHandler))
-      .alias(Application, 'app')
-      .alias(Application, 'ctx')
+      .alias(StoneFactory, 'ctx')
       .alias(Container, 'container')
-      .alias(Application, 'context')
       .alias(EventEmitter, 'events')
-      .alias(Application, 'application')
+      .alias(StoneFactory, 'context')
       .alias(EventEmitter, 'eventEmitter')
       .alias(ConfigurationManager, 'config')
       .alias(ExceptionHandler, 'exceptionHandler')
       .alias(ConfigurationManager, 'configurationManager')
 
     return this
+      .setAppModule(AppModule)
       .#registerHookListeners()
-      .setAppModule(this.#config.get('app.appModule', this.#defaultAppModule))
-  }
-
-  #defaultAppModule () {
-    return () => {
-      return {
-        run () {
-          console.log('Hello world!')
-        }
-      }
-    }
   }
 
   #registerEventListeners () {
     return this
       .#registerConfigListeners()
-      .#registerProvidersListeners()
       .#registerConfigSubscribers()
+      .#registerProvidersListeners()
       .#registerProvidersSubscribers()
   }
 
@@ -500,8 +459,9 @@ export class Application extends Macroable {
   #registerEventListener (eventListener) {
     for (const [eventName, listeners] of eventListener) {
       for (const listener of listeners) {
-        this.registerService(listener)
-        this.on(eventName, e => this.get(listener).handle(e))
+        this
+          .registerService(listener)
+          .on(eventName, e => this.get(listener).handle(e))
       }
     }
 
