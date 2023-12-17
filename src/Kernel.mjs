@@ -5,6 +5,8 @@ import { LogicException } from './exceptions/LogicException.mjs'
 import { RegisterProviders } from './bootstrap/RegisterProviders.mjs'
 
 export class Kernel {
+  static NAME = 'default'
+
   #context
   #endedAt
   #startedAt

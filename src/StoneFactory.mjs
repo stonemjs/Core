@@ -1,8 +1,8 @@
 import { Event } from './Event.mjs'
 import { Kernel } from './Kernel.mjs'
-import { Adapter } from './Adapter.mjs'
 import { Macroable } from '@stone-js/macroable'
 import { EventEmitter } from './EventEmitter.mjs'
+import { isClass, isPlainObject } from './utils.mjs'
 import { Container } from '@stone-js/service-container'
 import { ExceptionHandler } from './ExceptionHandler.mjs'
 import { LogicException } from './exceptions/LogicException.mjs'
@@ -62,20 +62,30 @@ export class StoneFactory extends Macroable {
    * Create and run application with a specific adapter.
    *
    * @param  {Function|Function.constructor} AppModule - The application module.
-   * @param  {Object} [options={}] - The application configurations.
+   * @param  {Function.constructor} [Adapter=null] - The application adapter.
+   * @param  {Object} [options=null] - The application configurations.
    * @return {any}
    * @static
    */
-  static createAndRun (AppModule, options = {}) {
-    const config = new ConfigurationManager(options ?? {})
-    const adapterName = config.get('app.adapter', 'default')
-    const CurrentAdapter = config.get(`app.adapters.${adapterName}`, Adapter)
+  static createAndRun (AppModule, Adapter = null, options = null) {
+    options = Adapter && isPlainObject(Adapter) ? Adapter : options
+    Adapter = Adapter && isClass(Adapter) ? Adapter : null
 
-    if (CurrentAdapter.prototype.run) {
+    const config = new ConfigurationManager(options ?? {})
+    const adapterName = config.get('app.adapter.default', 'default')
+    const CurrentAdapter = config.get(`app.adapter.adapters.${adapterName}`, Adapter)
+
+    if (CurrentAdapter?.prototype?.run) {
       return CurrentAdapter.create(AppModule, config).run()
     }
 
-    throw new LogicException('Adapter must have a run method')
+    if (config.get('app.debug', false)) {
+      const loggerName = config.get('app.logger.default', 'default')
+      const logger = config.get(`app.logger.loggers.${loggerName}`, console)
+      logger.info('No Adapter provided!')
+    }
+
+    return this.create(AppModule, config).run()
   }
 
   /**
@@ -103,7 +113,7 @@ export class StoneFactory extends Macroable {
   }
 
   get kernel () {
-    const kernel = this.#config.get('app.kernel', 'default')
+    const kernel = this.#config.get('app.kernel.default', 'default')
 
     if (this.hasResolvedKernel(kernel)) {
       return this.getResolvedKernel(kernel)
@@ -117,8 +127,8 @@ export class StoneFactory extends Macroable {
   }
 
   get logger () {
-    const logger = this.#config.get('app.logger', 'default')
-    return this.#config.get(`app.loggers.${logger}`, console)
+    const logger = this.#config.get('app.logger.default', 'default')
+    return this.#config.get(`app.logger.loggers.${logger}`, console)
   }
 
   get (key, fallback = null) {
@@ -146,31 +156,27 @@ export class StoneFactory extends Macroable {
     return this
   }
 
-  app (AppModule) {
-    return this.setAppModule(AppModule)
-  }
-
   setAppModule (AppModule) {
     this.#appModule = AppModule ?? this.#appModule
     return this
   }
 
   addKernel (key, kernel) {
-    this.#config.set(`app.kernels.${key}`, kernel)
+    this.#config.set(`app.kernel.kernels.${key}`, kernel)
     return this
   }
 
   hasKernel (key) {
-    return this.#config.has(`app.kernels.${key}`)
+    return this.#config.has(`app.kernel.kernels.${key}`)
   }
 
   getKernel (key) {
-    return this.#config.get(`app.kernels.${key}`)
+    return this.#config.get(`app.kernel.kernels.${key}`)
   }
 
-  setKernel (key) {
+  setDefaultKernel (key) {
     if (this.hasKernel(key)) {
-      this.#config.set('app.kernel', key)
+      this.#config.set('app.kernel.default', key)
       return this
     }
 
@@ -199,9 +205,8 @@ export class StoneFactory extends Macroable {
     return this
   }
 
-  run (AppModule = null) {
+  run () {
     return this
-      .setAppModule(AppModule)
       .setup()
       .start()
   }
@@ -336,13 +341,13 @@ export class StoneFactory extends Macroable {
   }
 
   setLocale (locale) {
-    this.#config.set('app.locale.code', locale)
+    this.#config.set('app.locale.default', locale)
     this.emit(Event.LOCALE_UPDATED, new Event(Event.LOCALE_UPDATED, this, locale))
     return this
   }
 
   getLocale () {
-    return this.#config.get('app.locale.code', this.getFallbackLocale())
+    return this.#config.get('app.locale.default', this.getFallbackLocale())
   }
 
   isLocale (locale) {
@@ -493,7 +498,7 @@ export class StoneFactory extends Macroable {
   }
 
   #makeKernels () {
-    for (const [name, Class] of Object.entries(this.#config.get('app.kernels', {}))) {
+    for (const [name, Class] of Object.entries(this.#config.get('app.kernel.kernels', {}))) {
       this.#kernels.set(name, this.resolveService(Class))
     }
 
