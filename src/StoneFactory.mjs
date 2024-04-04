@@ -1,13 +1,10 @@
 import { Event } from './Event.mjs'
 import { Kernel } from './Kernel.mjs'
-import { Macroable } from '@stone-js/macroable'
+import { Config } from '@stone-js/config'
 import { EventEmitter } from './EventEmitter.mjs'
-import { isClass, isPlainObject } from './utils.mjs'
 import { Container } from '@stone-js/service-container'
 import { ExceptionHandler } from './ExceptionHandler.mjs'
-import { LogicException } from './exceptions/LogicException.mjs'
-import { RuntimeException } from './exceptions/RuntimeException.mjs'
-import { ConfigurationManager } from '@stone-js/configuration-manager'
+import { RuntimeException, LogicException, isClass, isPlainObject } from '@stone-js/common'
 
 /**
  * Class representing StoneFactory.
@@ -15,7 +12,7 @@ import { ConfigurationManager } from '@stone-js/configuration-manager'
  * @version 1.0.0
  * @author Mr. Stone <pierre.evens16@gmail.com>
  */
-export class StoneFactory extends Macroable {
+export class StoneFactory {
   static VERSION = '1.0.0'
 
   #booted
@@ -32,11 +29,9 @@ export class StoneFactory extends Macroable {
    * Create an application.
    *
    * @param {Function|Function.constructor} AppModule           - The application module.
-   * @param {Object|ConfigurationManager}   [configurations={}] - The application configurations.
+   * @param {Object|Config}   [configurations={}] - The application configurations.
    */
   constructor (AppModule, configurations = {}) {
-    super()
-
     this.#booted = false
     this.#kernels = new Map()
     this.#providers = new Set()
@@ -50,7 +45,7 @@ export class StoneFactory extends Macroable {
    * Create an instance of StoneFactory.
    *
    * @param  {Function|Function.constructor} AppModule      - The application module.
-   * @param  {Object|ConfigurationManager}   configurations - The application configurations.
+   * @param  {Object|Config}   configurations - The application configurations.
    * @return {StoneFactory} An Application object.
    * @static
    */
@@ -71,12 +66,12 @@ export class StoneFactory extends Macroable {
     options = Adapter && isPlainObject(Adapter) ? Adapter : options
     Adapter = Adapter && isClass(Adapter) ? Adapter : null
 
-    const config = new ConfigurationManager(options ?? {})
+    const config = new Config(options ?? {})
     const adapterName = config.get('app.adapter.default', 'default')
     const CurrentAdapter = config.get(`app.adapter.adapters.${adapterName}`, Adapter)
 
     if (CurrentAdapter?.prototype?.run) {
-      return CurrentAdapter.create(AppModule, config).run()
+      return CurrentAdapter.createAndRun(AppModule, config)
     }
 
     if (config.get('app.debug', false)) {
@@ -205,10 +200,10 @@ export class StoneFactory extends Macroable {
     return this
   }
 
-  run () {
+  run (input = null) {
     return this
       .setup()
-      .start()
+      .start(input)
   }
 
   setup () {
@@ -244,12 +239,12 @@ export class StoneFactory extends Macroable {
     return this
   }
 
-  async start () {
-    this.emit(Event.STARTING_HOOK, new Event(Event.STARTING_HOOK, this))
+  async start (input = null) {
+    this.emit(Event.STARTING_HOOK, new Event(Event.STARTING_HOOK, this, { input }))
 
-    const output = await this.kernel.run()
+    const output = await this.kernel.run(input)
 
-    this.emit(Event.STARTED_HOOK, new Event(Event.STARTED_HOOK, this, output))
+    this.emit(Event.STARTED_HOOK, new Event(Event.STARTED_HOOK, this, { input, output }))
 
     return output
   }
@@ -387,23 +382,23 @@ export class StoneFactory extends Macroable {
   #registerBaseBindings (AppModule, configurations) {
     this.#container = new Container()
     this.#eventEmitter = new EventEmitter()
-    this.#config = configurations instanceof ConfigurationManager ? configurations : new ConfigurationManager(configurations)
+    this.#config = configurations instanceof Config ? configurations : new Config(configurations)
 
     this
       .#container
       .instance(StoneFactory, this)
       .instance(Container, this.#container)
       .instance(EventEmitter, this.#eventEmitter)
-      .instance(ConfigurationManager, this.#config)
+      .instance(Config, this.#config)
       .autoBinding(ExceptionHandler, this.#config.get('exceptionHandler', ExceptionHandler))
       .alias(StoneFactory, 'ctx')
       .alias(Container, 'container')
       .alias(EventEmitter, 'events')
       .alias(StoneFactory, 'context')
       .alias(EventEmitter, 'eventEmitter')
-      .alias(ConfigurationManager, 'config')
+      .alias(Config, 'config')
       .alias(ExceptionHandler, 'exceptionHandler')
-      .alias(ConfigurationManager, 'configurationManager')
+      .alias(Config, 'configurationManager')
 
     return this
       .setAppModule(AppModule)

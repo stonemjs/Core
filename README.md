@@ -3,7 +3,7 @@
 ![npm](https://img.shields.io/npm/l/@stone-js/core)
 ![npm](https://img.shields.io/npm/v/@stone-js/core)
 ![npm](https://img.shields.io/npm/dm/@stone-js/core)
-![Maintenance](https://img.shields.io/maintenance/yes/2023)
+![Maintenance](https://img.shields.io/maintenance/yes/2024)
 
 StoneJS Core provides a simple and powerful environment to create any javascript projects, whether it is a simple project, a library, a backend, a frontend or a command line (CLI) application.
 
@@ -12,17 +12,10 @@ a kernel to run your application and an adapter to run your application in the a
 
 All features are customizable, allowing you to easily extend them or include others.
 
-## Table of Contents
-* [Installation](#installation)
+---
 
-## Installation
+Get started with the [documentation](https://stonejs.com/cookbook/core).
 
-The StoneJS Core can be installed with both `npm` and `yarn`.
+## Contributing
 
-```sh
-# Install with NPM
-$ npm i @stone-js/core
-
-# Install with yarn
-$ yarn add @stone-js/core
-```
+See [Contributing Guide](https://github.com/stonemjs/core/blob/main/CONTRIBUTING.md).

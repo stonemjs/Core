@@ -1,0 +1,30 @@
+{
+  "opts": {
+    "template": "node_modules/docdash"
+  },
+  "source": {
+    "includePattern": ".+\\.(m|c)?js(doc|x)?$"
+  },
+  "docdash": {
+    "static": true,
+    "sort": true,
+    "search": true,
+    "collapse": true,
+    "typedefs": true,
+    "removeQuotes": "none",
+    "scripts": [],
+    "menu": {
+      "Github repo": {
+        "href": "https://github.com/stonemjs/core",
+        "target": "_blank",
+        "class": "menu-item",
+        "id": "repository"
+      }
+    }
+  },
+  "templates": {
+    "default": {
+      "useLongnameInNav": true
+    }
+  }
+}

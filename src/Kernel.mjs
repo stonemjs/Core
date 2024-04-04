@@ -1,8 +1,7 @@
 import { Event } from './Event.mjs'
-import { isClass, isFunction } from './utils.mjs'
 import { BootProviders } from './bootstrap/BootProviders.mjs'
-import { LogicException } from './exceptions/LogicException.mjs'
 import { RegisterProviders } from './bootstrap/RegisterProviders.mjs'
+import { LogicException, isClass, isFunction } from '@stone-js/common'
 
 export class Kernel {
   static NAME = 'default'
@@ -26,7 +25,7 @@ export class Kernel {
       .reduce((prev, curr) => prev.concat(prev.includes(curr) ? [] : curr), [])
   }
 
-  async run () {
+  async run (input = null) {
     const App = this.#context.appModule
 
     if (isFunction(App)) {
@@ -38,8 +37,8 @@ export class Kernel {
 
       try {
         await this._beforeRunning()
-        this.#resolvedAppModule = isClass(App) ? new App(this.#context.container) : await App(this.#context.container)
-        output = this.#resolvedAppModule?.run ? (await this.#resolvedAppModule.run()) : this.#resolvedAppModule
+        this.#resolvedAppModule = isClass(App) ? new App(this.#context.container) : await App(this.#context.container, input)
+        output = this.#resolvedAppModule?.run ? (await this.#resolvedAppModule.run(input)) : this.#resolvedAppModule
       } catch (error) {
         await this._reportException(error)
         output = await this._renderException(error)

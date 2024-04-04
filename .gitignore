@@ -87,3 +87,11 @@ lerna-debug.log*
 
 # Index
 index.html
+
+# JSDoc
+docs/
+
+# Examples
+examples/
+
+README.fr.md
