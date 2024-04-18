@@ -14,11 +14,11 @@ import { ErrorHandler, RuntimeException, LogicException, isClass, isPlainObject 
 export class StoneFactory {
   static VERSION = '1.0.0'
 
-  #hooks
   #booted
   #config
   #kernels
   #handler
+  #appModule
   #providers
   #container
   #errorHandler
@@ -27,25 +27,12 @@ export class StoneFactory {
   #hasBeenBootstrapped
 
   /**
-   * Create an instance of StoneFactory.
-   *
-   * @param {Function|Function.constructor} handler - User-defined application handler.
-   * @param {Object}   [options={}] - Application configuration options.
-   * @return {StoneFactory} An Application object.
-   * @static
-   */
-  static create (AppModule, configurations = {}) {
-    return new this(AppModule, configurations)
-  }
-
-  /**
    * Create an application.
    *
    * @param {Function|Function.constructor} handler - User-defined application handler.
    * @param {Object}   [options={}] - Application configuration options.
    */
   constructor (handler, options = {}) {
-    this.#hooks = {}
     this.#booted = false
     this.#handler = handler
     this.#kernels = new Map()
@@ -56,39 +43,149 @@ export class StoneFactory {
     this.#registerBaseBindings(options)
   }
 
-  /** @return {string} */
+  /**
+   * Create an instance of StoneFactory.
+   *
+   * @param  {Function|Function.constructor} AppModule      - The application module.
+   * @param  {Object|Config}   configurations - The application configurations.
+   * @return {StoneFactory} An Application object.
+   * @static
+   */
+  static create (AppModule, configurations = {}) {
+    return new this(AppModule, configurations)
+  }
+
+  /**
+   * Create and run application with a specific adapter.
+   *
+   * @param  {Function|Function.constructor} AppModule - The application module.
+   * @param  {Function.constructor} [Adapter=null] - The application adapter.
+   * @param  {Object} [options=null] - The application configurations.
+   * @return {any}
+   * @static
+   */
+  static createAndRun (AppModule, Adapter = null, options = null) {
+    options = Adapter && isPlainObject(Adapter) ? Adapter : options
+    Adapter = Adapter && isClass(Adapter) ? Adapter : null
+
+    const config = new Config(options ?? {})
+    const adapterName = config.get('app.adapter.default', 'default')
+    const CurrentAdapter = config.get(`app.adapter.adapters.${adapterName}`, Adapter)
+
+    if (CurrentAdapter?.prototype?.run) {
+      return CurrentAdapter.createAndRun(AppModule, config)
+    }
+
+    if (config.get('app.debug', false)) {
+      const loggerName = config.get('app.logger.default', 'default')
+      const logger = config.get(`app.logger.loggers.${loggerName}`, console)
+      logger.info('No Adapter provided!')
+    }
+
+    return this.create(AppModule, config).run()
+  }
+
+  /**
+   * Get application's version.
+   * @return {string} The version.
+   */
   get version () {
     return StoneFactory.VERSION
   }
 
-  /** @return {Config} */
   get config () {
     return this.#config
   }
 
-  /** @return {Container} */
   get container () {
     return this.#container
   }
 
-  /** @return {EventEmitter} */
   get events () {
     return this.#eventEmitter
   }
 
-  /** @return {EventEmitter} */
-  get eventEmitter () {
-    return this.#eventEmitter
-  }
-
-  /** @return {ErrorHandler} */
-  get errorHandler () {
-    return this.#errorHandler
-  }
-
-  /** @return {boolean} */
   get hasBeenBootstrapped () {
     return this.#hasBeenBootstrapped
+  }
+
+  get kernel () {
+    const kernel = this.#config.get('app.kernel.default', 'default')
+
+    if (this.hasResolvedKernel(kernel)) {
+      return this.getResolvedKernel(kernel)
+    }
+
+    throw new RuntimeException(`No kernel resolved with this name ${kernel}`)
+  }
+
+  get appModule () {
+    return this.#appModule
+  }
+
+  get logger () {
+    const logger = this.#config.get('app.logger.default', 'default')
+    return this.#config.get(`app.logger.loggers.${logger}`, console)
+  }
+
+  get (key, fallback = null) {
+    return this.#container.bound(key)
+      ? this.#container.make(key)
+      : this.#config.get(key, fallback)
+  }
+
+  has (key) {
+    return this.#container.bound(key) || this.#config.has(key)
+  }
+
+  on (eventName, listener) {
+    this.#eventEmitter.on(eventName, listener)
+    return this
+  }
+
+  emit (eventName, ...data) {
+    this.#eventEmitter.emit(eventName, ...data)
+    return this
+  }
+
+  removeListener (eventName, listener) {
+    this.#eventEmitter.removeListener(eventName, listener)
+    return this
+  }
+
+  setAppModule (AppModule) {
+    this.#appModule = AppModule ?? this.#appModule
+    return this
+  }
+
+  addKernel (key, kernel) {
+    this.#config.set(`app.kernel.kernels.${key}`, kernel)
+    return this
+  }
+
+  hasKernel (key) {
+    return this.#config.has(`app.kernel.kernels.${key}`)
+  }
+
+  getKernel (key) {
+    return this.#config.get(`app.kernel.kernels.${key}`)
+  }
+
+  setDefaultKernel (key) {
+    if (this.hasKernel(key)) {
+      this.#config.set('app.kernel.default', key)
+      return this
+    }
+
+    throw new LogicException(`No kernel registered with this name ${key}`)
+  }
+
+  hasResolvedKernel (key) {
+    return this.#kernels.has(key)
+  }
+
+  getResolvedKernel (key) {
+    return this.#kernels.get(key)
   }
 
   resolveService (Service) {
@@ -105,92 +202,10 @@ export class StoneFactory {
     return this
   }
 
-  /**
-   * Lifecycle hooks listener.
-   *
-   * @callback hookListener
-   */
-
-  /**
-   * Register event listener for lifecycle hooks.
-   *
-   * @param   {('onInit'|'beforeHandle'|'onTerminate')} event
-   * @param   {hookListener} listener
-   * @returns {this}
-   */
-  hook (event, listener) {
-    this.#hooks[event] ??= []
-    this.#hooks[event].push(listener)
+  run (input = null) {
     return this
-  }
-
-  /**
-   * Handle IncomingEvent.
-   *
-   * @param   {IncomingHttpEvent} event
-   * @returns {Object}
-   */
-  async handle (event) {
-    await this._onEventHandled(event)
-    await this._sendEventThroughDestination(event)
-    return await this._afterRunning(response)
-  }
-
-  /**
-   * Hook that runs once before everything.
-   * Useful to initialize and cache things.
-   */
-  async onInit () {
-    if (Array.isArray(this.#hooks.onInit)) {
-      for (const listener of this.#hooks.onInit) {
-        await listener(this.#container)
-      }
-    }
-
-    if (isFunction(this.#handler?.onInit)) {
-      await this.#handler.onInit(this.#container)
-    }
-  }
-
-  /**
-   * Hook that runs at each events and just before running the action handler.
-   * Useful to bootstrap thing at each event.
-   */
-  async beforeHandle () {
-    if (Array.isArray(this.#hooks.beforeHandle)) {
-      for (const listener of this.#hooks.beforeHandle) {
-        await listener(this.#container)
-      }
-    }
-
-    if (isFunction(this.#handler?.beforeHandle)) {
-      await this.#handler.beforeHandle(this.#container)
-    }
-  }
-
-  /**
-   * Hook that runs just before of just after returning the response.
-   * Useful to make some cleanup.
-   */
-  async onTerminate () {
-    if (Array.isArray(this.#hooks.onTerminate)) {
-      for (const listener of this.#hooks.onTerminate) {
-        await listener(this.#container)
-      }
-    }
-
-    if (isFunction(this.#handler?.onTerminate)) {
-      await this.#handler.onTerminate(this.#container)
-    }
-
-    await this.terminate()
-  }
-
-  start () {
-    return AppRunner
-      .create()
-      .setContainer(this.#container)
-      .run(this)
+      .setup()
+      .start(input)
   }
 
   setup () {
@@ -272,28 +287,6 @@ export class StoneFactory {
     return this.#registeredProviders.has(Provider.constructor.name)
   }
 
-  /**
-   * Set hooks.
-   *
-   * @param   {Object} hooks
-   * @returns {this}
-   */
-  setHooks (hooks) {
-    this.#hooks = hooks
-    return this
-  }
-
-  /**
-   * Skip all middleware.
-   *
-   * @param  {boolean} [value=true]
-   * @return {this}
-   */
-  skipMiddleware (value = true) {
-    this.#config.set('middleware.skip', value)
-    return this
-  }
-
   async registerProvider (provider, force = false) {
     if (!provider.register) {
       throw new LogicException(`This provider ${provider.toString()} must contain a register method`)
@@ -324,17 +317,6 @@ export class StoneFactory {
     await provider.boot()
 
     return this.emit(Event.PROVIDER_BOOTED, new Event(Event.PROVIDER_BOOTED, this, provider))
-  }
-
-  /**
-   * Set hanlder.
-   *
-   * @param  {(Function|Object)} handler
-   * @returns {this}
-   */
-  setHandler (handler) {
-    this.#handler = handler
-    return this
   }
 
   getEnvironment () {

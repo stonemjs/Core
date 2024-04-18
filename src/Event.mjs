@@ -1,24 +1,34 @@
-export class Event {
-  static SETUP_HOOK = 'stonejs@hook.setup'
-  static STARTED_HOOK = 'stonejs@hook.started'
-  static STARTING_HOOK = 'stonejs@hook.starting'
-  static TERMINATE_HOOK = 'stonejs@hook.terminate'
-  static SETTING_UP_HOOK = 'stonejs@hook.settingUp'
-  static TERMINATING_HOOK = 'stonejs@hook.terminating'
+import { AbstractEvent } from '@stone-js/common'
 
-  static KERNEL_RAN = 'stonejs@kernel.ran'
-  static KERNEL_RUNNING = 'stonejs@kernel.running'
+/**
+ * Class representing a kernel Event.
+ *
+ * @author Mr. Stone <evensstone@gmail.com>
+ *
+ * @extends AbstractEvent
+ */
+export class Event extends AbstractEvent {
+  /**
+   * EVENT_HANDLED Event name, fires when event was intercepted by kernel.
+   *
+   * @type {string}
+   * @event Event#EVENT_HANDLED
+   */
+  static EVENT_HANDLED = 'stonejs@kernel.event_handled'
 
-  static LOCALE_UPDATED = 'stonejs@locale.updated'
+  /**
+   * RESPONSE_PREPARED Event name, fires before preparing the response.
+   *
+   * @type {string}
+   * @event Event#RESPONSE_PREPARED
+   */
+  static RESPONSE_PREPARED = 'stonejs@kernel.response_prepared'
 
-  static PROVIDER_BOOTED = 'stonejs@provider.booted'
-  static PROVIDER_BOOTING = 'stonejs@provider.booting'
-  static PROVIDER_REGISTERED = 'stonejs@provider.registered'
-  static PROVIDER_REGISTERING = 'stonejs@provider.registering'
-
-  constructor (name, context, data = null) {
-    this.name = name
-    this.data = data
-    this.context = context
-  }
+  /**
+   * PREPARING_RESPONSE Event name, fires after the response was prepared.
+   *
+   * @type {string}
+   * @event Event#PREPARING_RESPONSE
+   */
+  static PREPARING_RESPONSE = 'stonejs@kernel.preparing_response'
 }
