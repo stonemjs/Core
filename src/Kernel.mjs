@@ -1,7 +1,6 @@
 import { Event } from './Event.mjs'
-import { Config } from '@stone-js/config'
 import { Pipeline } from '@stone-js/pipeline'
-import { IncomingEvent, OutgoingResponse, isClass, isFunction } from '@stone-js/common'
+import { IncomingEvent, isClass, isFunction } from '@stone-js/common'
 
 /**
  * Class representing a Kernel.
@@ -57,6 +56,11 @@ export class Kernel {
   /** @return {EventEmitter} */
   get eventEmitter () {
     return this.#eventEmitter
+  }
+
+  /** @return {Router} */
+  get router () {
+    return this.#container.has('router') ? this.#container.router : null
   }
 
   /** @returns {IncomingEvent} */
@@ -126,7 +130,7 @@ export class Kernel {
    * Handle IncomingEvent.
    *
    * @param   {IncomingEvent} event
-   * @returns {OutgoingResponse}
+   * @returns {(OutgoingResponse|OutgoingHttpResponse)}
    */
   async handle (event) {
     await this._onBootstrap(event)
@@ -149,7 +153,7 @@ export class Kernel {
   /**
    * Hook that runs at each events and just before running the action handler.
    * Useful to bootstrap thing at each event.
-   * 
+   *
    * @protected
    * @param  {IncomingEvent} event
    * @throws {TypeError}
@@ -172,12 +176,12 @@ export class Kernel {
 
   /**
    * Send Event to destination.
-   * 
+   *
    * @protected
    * @param {IncomingEvent} event
    */
   async _sendEventThroughDestination (event) {
-    this.#currentResponse =  await Pipeline
+    this.#currentResponse = await Pipeline
       .create(this.container)
       .send(event)
       .through(this.eventMiddleware)
@@ -186,15 +190,15 @@ export class Kernel {
 
   /**
    * Prepare Event destination.
-   * 
+   *
    * @protected
    * @param   {IncomingEvent} event
    * @returns {*}
    * @throws  {TypeError}
    */
   _prepareDestination (event) {
-    if (this.#container.has('router')) {
-      return this.#container.router.dispatch(event)
+    if (this.router) {
+      return this.router.dispatch(event)
     }
 
     if (isFunction(this.#handler)) {
@@ -217,10 +221,10 @@ export class Kernel {
 
   /**
    * Prepare response before sending
-   * 
+   *
    * @protected
    * @param   {IncomingEvent} event
-   * @returns {*}
+   * @returns {(OutgoingResponse|OutgoingHttpResponse)}
    */
   async _prepareResponse (event) {
     this.#eventEmitter.emit(Event.PREPARING_RESPONSE, new Event(Event.PREPARING_RESPONSE, this, { event, response: this.#currentResponse }))
@@ -233,9 +237,7 @@ export class Kernel {
       .through(this.responseMiddleware)
       .then((_, response) => response)
 
-      
     this.#currentResponse.render && await this.#currentResponse.render(event) // Only for frontend rendering
-    this.#container.registerInstance(OutgoingResponse, this.#currentResponse, ['response'])
     this.#eventEmitter.emit(Event.EVENT_HANDLED, this, { event, response: this.#currentResponse })
 
     return this.#currentResponse

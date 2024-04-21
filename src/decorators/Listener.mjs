@@ -1,24 +1,27 @@
 import deepmerge from 'deepmerge'
 
 /**
- * ListenerConfiguration.
+ * Listener Decorator: Useful for customizing classes as listener.
  *
- * @typedef  {Object}  ListenerConfiguration
- * @property {string}  event                  - The event name to listen to
- * @property {boolean} hook                   - Listen for hook events
- */
-
-/**
- * Listener decorator to mark a class as a listener.
+ * @author Mr. Stone <evensstone@gmail.com>
  *
- * @param {ListenerConfiguration} [configurations={}] - The decorator congiguration keys.
- * @return {any}
+ * @memberOf Decorators
+ * @param  {Object} options
+ * @param  {string} options.event
+ * @return {Function}
  */
-export const Listener = (value = {}) => {
+export const Listener = (options) => {
   return (target) => {
-    value ??= {}
-    target.metadata = deepmerge(target.metadata ?? {}, { ...value, isListener: true })
-    target.metadata.hook ??= false
+    if (!isClass(target)) {
+      throw new TypeError('This decorator can only be applied at class level.')
+    }
+
+    const metadata = {
+      listener: options
+    }
+
+    target.$$metadata$$ = deepmerge(target.$$metadata$$ ?? {}, metadata)
+
     return target
   }
 }

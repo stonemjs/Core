@@ -1,7 +1,10 @@
 import deepmerge from 'deepmerge'
+import { isClass } from '@stone-js/common'
+import { AbstractProvider } from '../AbstractProvider.mjs'
 
 /**
- * Subscriber Decorator: Useful for customizing classes as subscriber.
+ * ServiceProvider decorator to mark a class as a ServiceProvider
+ * and autobind it's services to the container.
  *
  * @author Mr. Stone <evensstone@gmail.com>
  *
@@ -9,15 +12,18 @@ import deepmerge from 'deepmerge'
  * @param  {Object} options - The decorator congiguration options.
  * @return {Function}
  */
-export const Subscriber = (options = {}) => {
+export const ServiceProvider = (options) => {
   return (target) => {
     if (!isClass(target)) {
       throw new TypeError('This decorator can only be applied at class level.')
     }
 
     const metadata = {
-      subscriber: options
+      serviceProvider: { ...options }
     }
+
+    Reflect.setPrototypeOf(target, AbstractProvider)
+    Reflect.setPrototypeOf(target.prototype, AbstractProvider.prototype)
 
     target.$$metadata$$ = deepmerge(target.$$metadata$$ ?? {}, metadata)
 
