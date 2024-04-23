@@ -8,39 +8,45 @@ import { IncomingEvent, isClass, isFunction } from '@stone-js/common'
  * @author Mr. Stone <evensstone@gmail.com>
  */
 export class Kernel {
-  static name = 'Kernel'
-
-  #hooks
   #config
+  #logger
+  #booted
   #handler
+  #endedAt
+  #startedAt
   #container
+  #providers
   #eventEmitter
   #currentEvent
+  #errorHandler
   #currentResponse
+  #hasBeenBootstrapped
+  #registeredProviders
 
   /**
    * Create a Kernel.
    *
-   * @param   {Container} container - Service container.
-   * @param   {(Function|Object)} [handler=null] - App handler.
+   * @param   {(Function|Function.constructor)} [handler=null] - User-defined application handler.
+   * @param   {runnerOptions} [options={}] - AppRunner configuration options.
    * @returns {Kernel}
    */
-  static create (container, handler = null) {
+  static create (handler = null, options = {}) {
     return new this(container, handler)
   }
 
   /**
    * Create a Kernel.
    *
-   * @param {Container} container - Service container.
-   * @param {(Function|Object)} [handler=null] - App handler.
+   * @param {(Function|Function.constructor)} [handler=null] - User-defined application handler.
+   * @param {runnerOptions} [options={}] - AppRunner configuration options.
    */
-  constructor (container, handler = null) {
-    this.#hooks = {}
-    this.#handler = handler
-    this.#container = container
-    this.#config = container.config
-    this.#eventEmitter = container.eventEmitter
+  constructor (handler = null, options = {}) {
+    this.#booted = false
+    this.#providers = new Set()
+    this.#hasBeenBootstrapped = false
+    this.#registeredProviders = new Set()
+    
+    this.#registerBaseBindings(handler, options)
   }
 
   /** @return {Container} */
@@ -56,6 +62,11 @@ export class Kernel {
   /** @return {EventEmitter} */
   get eventEmitter () {
     return this.#eventEmitter
+  }
+
+  /** @returns {ErrorHandler} */
+  get errorHandler () {
+    return this.#errorHandler
   }
 
   /** @return {Router} */
@@ -107,23 +118,9 @@ export class Kernel {
       .concat(this.middleware.terminate ?? [])
   }
 
-  /**
-   * Lifecycle hooks listener.
-   *
-   * @callback hookListener
-   */
-
-  /**
-   * Register event listener for lifecycle hooks.
-   *
-   * @param   {('onBootstrap')} event
-   * @param   {hookListener} listener
-   * @returns {this}
-   */
-  hook (event, listener) {
-    this.#hooks[event] ??= []
-    this.#hooks[event].push(listener)
-    return this
+  /** @returns {number} */
+  get executionDuration () {
+    return this.#endedAt - this.#startedAt
   }
 
   /**
@@ -139,15 +136,44 @@ export class Kernel {
   }
 
   /**
+   * Hook that runs at each events and before everything.
+   * Useful to initialize things at each events.
+   */
+  async beforeHandle () {
+    if (isFunction(this.#handler?.beforeHandle)) {
+      await this.#handler.beforeHandle()
+    }
+
+    await this._onRegister()
+  }
+
+  /**
+   * Hook that runs just before of just after returning the response.
+   * Useful to make some cleanup.
    * Invoke kernel, router and current route terminate middlewares.
    */
-  terminate () {
-    return Pipeline
+  async onTerminate () {
+    if (isFunction(this.#handler?.onTerminate)) {
+      await this.#handler.onTerminate()
+    }
+
+    await Pipeline
       .create(this.container)
       .send(this.#currentEvent, this.#currentResponse)
       .through(this.terminateMiddleware)
       .via('terminate')
       .thenReturn()
+  }
+
+  /**
+   * Register services to container.
+   *
+   * @protected
+   */
+  async _onRegister () {
+    if (isFunction(this.#handler?.register)) {
+      await this.#handler.register()
+    }
   }
 
   /**
@@ -167,10 +193,8 @@ export class Kernel {
     this.#container.registerInstance('originalEvent', event.clone())
     this.#container.registerInstance(IncomingEvent, event, ['event'])
 
-    if (Array.isArray(this.#hooks.onBootstrap)) {
-      for (const listener of this.#hooks.onBootstrap) {
-        await listener(this.#container)
-      }
+    if (isFunction(this.#handler?.boot)) {
+      await this.#handler.boot()
     }
   }
 
@@ -241,5 +265,45 @@ export class Kernel {
     this.#eventEmitter.emit(Event.EVENT_HANDLED, this, { event, response: this.#currentResponse })
 
     return this.#currentResponse
+  }
+
+  #registerBaseBindings (handler, options) {
+    this.#container = new Container()
+    this.#config = new Config(options)
+    this.#eventEmitter = new EventEmitter()
+    this.#logger = options.logger ?? console
+    this.#errorHandler = new ErrorHandler(this.#logger, options.errorHandler ?? {})
+    this.#handler = isClass(handler) ? new handler(this.#container) : handler
+
+    this
+      .#container
+      .instance(Config, this.#config)
+      .instance('logger', this.#logger)
+      .instance(Container, this.#container)
+      .instance(ErrorHandler, this.#errorHandler)
+      .instance(EventEmitter, this.#eventEmitter)
+      .alias(Config, 'config')
+      .alias(Container, 'container')
+      .alias(EventEmitter, 'events')
+      .alias(ErrorHandler, 'errorHandler')
+      .alias(EventEmitter, 'eventEmitter')
+  }
+
+  #makeProviders () {
+    for (const Class of this.#config.get('app.providers', [])) {
+      this.#providers.add(new Class(this.#container))
+    }
+  }
+
+  #makeMiddleware () {
+    for (const Class of this.#config.get('app.middleware', [])) {
+      isClass(Class) && this.#container.autoBinding(Class)
+    }
+  }
+
+  #makeMappers () {
+    for (const Class of this.#config.get('app.mappers', [])) {
+      isClass(Class) && this.#container.autoBinding(Class)
+    }
   }
 }

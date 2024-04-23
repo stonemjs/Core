@@ -1,32 +1,29 @@
 import json from '@rollup/plugin-json'
-import del from 'rollup-plugin-delete'
 import babel from '@rollup/plugin-babel'
-import terser from '@rollup/plugin-terser'
+import multi from '@rollup/plugin-multi-entry'
 import commonjs from '@rollup/plugin-commonjs'
 import nodeResolve from '@rollup/plugin-node-resolve'
 import nodePolyfills from 'rollup-plugin-polyfill-node'
 import nodeExternals from 'rollup-plugin-node-externals'
 
-export default {
-	input: 'src/index.mjs',
+const inputs = {
+  decorators: 'src/decorators/*.mjs',
+  index: ['src/StoneFactory.mjs', 'src/Event.mjs'],
+}
+
+export default Object.entries(inputs).map(([name, input]) => ({
+	input,
 	output: [
-    { format: 'es', file: 'dist/index.mjs' },
-    { format: 'cjs', file: 'dist/index.cjs' },
-    {
-      format: 'umd',
-      sourcemap: true,
-      name: 'StoneCore',
-      plugins: [terser()],
-      file: 'dist/index.min.js',
-    }
+    { format: 'es', file: `dist/${name}.mjs` },
+    { format: 'cjs', file: `dist/${name}.cjs` }
   ],
   plugins: [
     json(),
+    multi(),
     nodePolyfills({ include: ['events'], sourceMap: true }),
     nodeExternals({ deps: false }), // Must always be before `nodeResolve()`.
     nodeResolve(),
     babel({ babelHelpers: 'bundled' }),
-    commonjs(),
-    del({ targets: 'dist/*', runOnce: true }),
+    commonjs()
   ]
-};
+}))
