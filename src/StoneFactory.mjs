@@ -1,9 +1,6 @@
-import { Event } from './Event.mjs'
+import deepmerge from 'deepmerge'
 import { Kernel } from './Kernel.mjs'
-import { Config } from '@stone-js/config'
-import { EventEmitter } from './EventEmitter.mjs'
-import { Container } from '@stone-js/service-container'
-import { RuntimeException, LogicException, isClass, isPlainObject } from '@stone-js/common'
+import { isClass } from '@stone-js/common'
 
 /**
  * Class representing StoneFactory.
@@ -21,7 +18,7 @@ export class StoneFactory {
   /**
    * Create a Stone.js application.
    *
-   * @param   {(Function|Function.constructor)} [handler=null] - User-defined application handler.
+   * @param   {Function} [handler=null] - User-defined application handler.
    * @param   {Object} [options={}] - Application configuration options.
    * @returns {StoneFactory} An Application object.
    */
@@ -32,7 +29,7 @@ export class StoneFactory {
   /**
    * Create a Stone.js application and run it.
    *
-   * @param   {(Function|Function.constructor)} [handler=null] - User-defined application handler.
+   * @param   {Function} [handler=null] - User-defined application handler.
    * @param   {runnerOptions} [options={}] - AppRunner configuration options.
    * @returns {*}
    */
@@ -43,7 +40,7 @@ export class StoneFactory {
   /**
    * Create a Stone.js application.
    *
-   * @param {(Function|Function.constructor)} [handler=null] - User-defined application handler.
+   * @param {Function} [handler=null] - User-defined application handler.
    * @param {Object} [options={}] - Application configuration options.
    */
   constructor (handler = null, options = {}) {
@@ -79,31 +76,24 @@ export class StoneFactory {
    * Run handler.
    *
    * @returns {*}
+   * @throws  {RuntimeError}
    */
   async run () {
-    return this
-      .#getRunner()
-      .hooks(this.#hooks)
-      .run()
+    return this.#makeAdapter().hooks(this.#hooks).run()
   }
 
-  #getRunner () {
-    return this
-      .#options
-      .runner
-      .create({ adapters: this.#getAdapters(), current: this.#options.adapter.current })
-  }
+  #makeAdapter () {
+    let options = Object.values(this.#options).reduce((prev, option) => deepmerge(prev, option), {})
 
-  #getKernelResolver () {
-    return () => Kernel.create(this.#handler, this.#options)
-  }
+    const current = options.app.adapters.find((v) => v.app.adapter.default)
+    const Adapter = current?.app.adapter.type
+    
+    if (!isClass(Adapter)) {
+      throw new RuntimeError('No adapters provided.')
+    }
 
-  #getAdapters () {
-    return this
-      .#options
-      .adapters.map(v => ({
-        alias: v.alias,
-        resolver: () => v.adapter.create(this.#getKernelResolver(), this.#options)
-      }))
+    options = deepmerge(options, current)
+
+    return Adapter.create(() => Kernel.create(this.#handler, options), options.app.adapter)
   }
 }

@@ -5,43 +5,32 @@
  */
 export class ErrorHandler {
   #levels
-  #logger
+  #container
   #dontReport
   #reportedError
   #withoutDuplicates
 
   /**
-   * Options.
-   *
-   * @typedef  ErrorHandlerOptions
-   * @property {Object} levels - Level per Error class.
-   * @property {Array} [dontReport=[]] - Error to not report.
-   * @property {boolean} [withoutDuplicates=false] - Do not report duplicate error.
-   */
-
-  /**
    * Create an ErrorHandler.
    *
-   * @param   {Object} [logger=null] - Logger.
-   * @param   {ErrorHandlerOptions} [options={}] - Configuration options.
+   * @param   {Container}  container - Service container to resolve dependencies.
    * @returns {ErrorHandler}
    */
-  static create (logger = null, options = {}) {
-    return new this(logger, options)
+  static create (container) {
+    return new this(container)
   }
 
   /**
    * Create an ErrorHandler.
    *
-   * @param {Object} [logger=null] - Logger.
-   * @param {ErrorHandlerOptions} [options={}] - Configuration options.
+   * @param {Container}  container - Service container to resolve dependencies.
    */
-  constructor (logger = null, options = {}) {
-    this.#logger = logger ?? console
-    this.#levels = options.levels ?? {}
+  constructor (container) {
+    this.#container = container
     this.#reportedError = new Set()
-    this.#dontReport = options.dontReport ?? []
-    this.#withoutDuplicates = options.withoutDuplicates ?? false
+    this.#levels = container.config.get('app.logging.levels', {})
+    this.#dontReport = container.config.get('app.logging.dontReport', [])
+    this.#withoutDuplicates = container.config.get('app.logging.withoutDuplicates', false)
   }
 
   level (Class, level) {
@@ -102,10 +91,11 @@ export class ErrorHandler {
     const level = Object.entries(this.#levels).find(([Class]) => error instanceof Class)?.[1] ?? 'error'
 
     const errorContext = this.#buildErrorContext(error)
+    const logger = this.#container?.has('logger') ? this.#container.make('logger') : console
 
-    this.#logger[level]
-      ? this.#logger[level](errorContext, error.message)
-      : this.#logger.error(errorContext, error.message)
+    logger[level]
+      ? logger[level](errorContext, error.message)
+      : logger.error(errorContext, error.message)
   }
 
   #buildErrorContext (error) {

@@ -9,44 +9,42 @@ import { IncomingEvent, isClass, isFunction } from '@stone-js/common'
  */
 export class Kernel {
   #config
-  #logger
   #booted
   #handler
-  #endedAt
-  #startedAt
   #container
   #providers
   #eventEmitter
   #currentEvent
   #errorHandler
   #currentResponse
-  #hasBeenBootstrapped
   #registeredProviders
 
   /**
    * Create a Kernel.
    *
-   * @param   {(Function|Function.constructor)} [handler=null] - User-defined application handler.
+   * @param   {Function} [handler=null] - User-defined application handler.
    * @param   {runnerOptions} [options={}] - AppRunner configuration options.
    * @returns {Kernel}
    */
   static create (handler = null, options = {}) {
-    return new this(container, handler)
+    return new this(handler, options)
   }
 
   /**
    * Create a Kernel.
    *
-   * @param {(Function|Function.constructor)} [handler=null] - User-defined application handler.
+   * @param {Function} [handler=null] - User-defined application handler.
    * @param {runnerOptions} [options={}] - AppRunner configuration options.
    */
   constructor (handler = null, options = {}) {
     this.#booted = false
     this.#providers = new Set()
-    this.#hasBeenBootstrapped = false
     this.#registeredProviders = new Set()
     
-    this.#registerBaseBindings(handler, options)
+    this
+      .#registerBaseBindings(options)
+      .#makeHandler(handler)
+      .#makeProviders()
   }
 
   /** @return {Container} */
@@ -54,34 +52,9 @@ export class Kernel {
     return this.#container
   }
 
-  /** @return {Config} */
-  get config () {
-    return this.#config
-  }
-
-  /** @return {EventEmitter} */
-  get eventEmitter () {
-    return this.#eventEmitter
-  }
-
-  /** @returns {ErrorHandler} */
-  get errorHandler () {
-    return this.#errorHandler
-  }
-
   /** @return {Router} */
   get router () {
     return this.#container.has('router') ? this.#container.router : null
-  }
-
-  /** @returns {IncomingEvent} */
-  get currentEvent () {
-    return this.#currentEvent
-  }
-
-  /** @returns {Object} */
-  get currentResponse () {
-    return this.#currentResponse
   }
 
   /** @returns {boolean} */
@@ -118,15 +91,10 @@ export class Kernel {
       .concat(this.middleware.terminate ?? [])
   }
 
-  /** @returns {number} */
-  get executionDuration () {
-    return this.#endedAt - this.#startedAt
-  }
-
   /**
    * Handle IncomingEvent.
    *
-   * @param   {IncomingEvent} event
+   * @param   {(IncomingEvent|IncomingHttpEvent)} event
    * @returns {(OutgoingResponse|OutgoingHttpResponse)}
    */
   async handle (event) {
@@ -140,9 +108,11 @@ export class Kernel {
    * Useful to initialize things at each events.
    */
   async beforeHandle () {
-    if (isFunction(this.#handler?.beforeHandle)) {
-      await this.#handler.beforeHandle()
+    for (const provider of this.#providers) {
+      await provider.beforeHandle?.()
     }
+
+    await this.#handler.beforeHandle?.()
 
     await this._onRegister()
   }
@@ -153,12 +123,14 @@ export class Kernel {
    * Invoke kernel, router and current route terminate middlewares.
    */
   async onTerminate () {
-    if (isFunction(this.#handler?.onTerminate)) {
-      await this.#handler.onTerminate()
+    for (const provider of this.#providers) {
+      await provider.onTerminate?.()
     }
 
+    await this.#handler.onTerminate?.()
+
     await Pipeline
-      .create(this.container)
+      .create(this.#container)
       .send(this.#currentEvent, this.#currentResponse)
       .through(this.terminateMiddleware)
       .via('terminate')
@@ -171,9 +143,14 @@ export class Kernel {
    * @protected
    */
   async _onRegister () {
-    if (isFunction(this.#handler?.register)) {
-      await this.#handler.register()
-    }
+    await this.#handler.register?.()
+    await this.#registerProviders()
+
+    this.#registerServices()
+    this.#registerAlias()
+    this.#registerListeners()
+    this.#registerMappers()
+    this.#registerSubscribers()
   }
 
   /**
@@ -193,9 +170,15 @@ export class Kernel {
     this.#container.registerInstance('originalEvent', event.clone())
     this.#container.registerInstance(IncomingEvent, event, ['event'])
 
+    if (this.#booted) return
+
     if (isFunction(this.#handler?.boot)) {
       await this.#handler.boot()
     }
+
+    await this.#bootProviders()
+
+    this.#booted = true
   }
 
   /**
@@ -206,7 +189,7 @@ export class Kernel {
    */
   async _sendEventThroughDestination (event) {
     this.#currentResponse = await Pipeline
-      .create(this.container)
+      .create(this.#container)
       .send(event)
       .through(this.eventMiddleware)
       .then(v => this._prepareDestination(v))
@@ -227,20 +210,11 @@ export class Kernel {
 
     if (isFunction(this.#handler)) {
       return this.#handler(this.#currentEvent)
-    } else if (isFunction(this.#handler?.[this._getHandlerMethod()])) {
-      return this.#handler[this._getHandlerMethod()](this.#currentEvent)
+    } else if (isFunction(this.#handler?.handle)) {
+      return this.#handler.handle(this.#currentEvent)
     }
 
     throw new TypeError('No router or correct handler has been provided.')
-  }
-
-  /**
-   * Handler method name.
-   *
-   * @returns {string}
-   */
-  _getHandlerMethod () {
-    return this.#config.get('app.handler', 'handle')
   }
 
   /**
@@ -256,7 +230,7 @@ export class Kernel {
     this.#eventEmitter.emit(Event.RESPONSE_PREPARED, new Event(Event.RESPONSE_PREPARED, this, { event, response: this.#currentResponse }))
 
     this.#currentResponse = await Pipeline
-      .create(this.container)
+      .create(this.#container)
       .send(event, this.#currentResponse)
       .through(this.responseMiddleware)
       .then((_, response) => response)
@@ -267,18 +241,15 @@ export class Kernel {
     return this.#currentResponse
   }
 
-  #registerBaseBindings (handler, options) {
+  #registerBaseBindings (options) {
     this.#container = new Container()
     this.#config = new Config(options)
     this.#eventEmitter = new EventEmitter()
-    this.#logger = options.logger ?? console
-    this.#errorHandler = new ErrorHandler(this.#logger, options.errorHandler ?? {})
-    this.#handler = isClass(handler) ? new handler(this.#container) : handler
+    this.#errorHandler = new ErrorHandler(this.#container)
 
     this
       .#container
       .instance(Config, this.#config)
-      .instance('logger', this.#logger)
       .instance(Container, this.#container)
       .instance(ErrorHandler, this.#errorHandler)
       .instance(EventEmitter, this.#eventEmitter)
@@ -287,23 +258,115 @@ export class Kernel {
       .alias(EventEmitter, 'events')
       .alias(ErrorHandler, 'errorHandler')
       .alias(EventEmitter, 'eventEmitter')
+
+    return this
+  }
+
+  #makeHandler (handler) {
+    this.#handler = isClass(handler) ? new handler(this.#container) : handler
+
+    return this
   }
 
   #makeProviders () {
-    for (const Class of this.#config.get('app.providers', [])) {
-      this.#providers.add(new Class(this.#container))
-    }
+    this
+      .#config
+      .get('app.providers', [])
+      .forEach((Class) => this.#providers.add(this.#container.resolve(Class, true)))
+
+    return this
   }
 
-  #makeMiddleware () {
-    for (const Class of this.#config.get('app.middleware', [])) {
-      isClass(Class) && this.#container.autoBinding(Class)
+  async #registerProviders () {
+    for (const provider of this.#providers) {
+      if (!provider.register) {
+        throw new LogicException(`This provider ${provider.toString()} must contain a register method`)
+      }
+
+      if (this.#registeredProviders.has(provider.constructor.name)) {
+        continue
+      }
+
+      await provider.register()
+
+      this.#registeredProviders.add(provider.constructor.name)
+
+      if (this.#booted) {
+        await provider.boot?.()
+      }
     }
+
+    return this
   }
 
-  #makeMappers () {
-    for (const Class of this.#config.get('app.mappers', [])) {
-      isClass(Class) && this.#container.autoBinding(Class)
+  #registerServices () {
+    this.#container.register(this.#config.get('app.services', []))
+    return this
+  }
+
+  #registerListeners () {
+    this
+      .#providers
+      .reduce(
+        (prev, provider) => prev.concat(Object.entries(provider.listeners ?? {})),
+        Object.entries(this.#config.get('app.listeners', {}))
+      )
+      .forEach(([event, listeners]) => {
+        listeners.forEach((listener) => {
+          this.#eventEmitter.on(event, (e) => this.#container.resolve(listener, true).handle(e))
+        })
+      })
+    return this
+  }
+
+  #registerSubscribers () {
+    this
+      .#providers
+      .reduce(
+        (prev, provider) => prev.concat(provider.subscribers ?? []),
+        this.#config.get('app.subscribers', [])
+      )
+      .forEach((subscriber) => this.#container.resolve(subscriber, true).subscribe(this.#eventEmitter))
+    return this
+  }
+
+  #registerAlias () {
+    this
+      .#providers
+      .reduce(
+        (prev, provider) => prev.concat(Object.entries(provider.aliases ?? {})),
+        Object.entries(this.#config.get('app.aliases', {}))
+      )
+      .forEach(([Class, alias]) => isClass(Class) && this.#container.alias(Class, alias))
+
+    return this
+  }
+
+  #registerMappers () {
+    if (this.#config.has('app.mapper.input.type')) {
+      const Mapper = this.#config.has('app.mapper.input.type')
+      const resolver = this.#config.has('app.mapper.input.resolver')
+      const middleware = this.#config.has('app.mapper.input.middleware', [])
+
+      this.#container.singleton('inputMapper', (container) => Mapper.create(container, middleware, resolver))
     }
+
+    if (this.#config.has('app.mapper.output.type')) {
+      const Mapper = this.#config.has('app.mapper.output.type')
+      const resolver = this.#config.has('app.mapper.output.resolver')
+      const middleware = this.#config.has('app.mapper.output.middleware', [])
+
+      this.#container.singleton('outputMapper', (container) => Mapper.create(container, middleware, resolver))
+    }
+
+    return this
+  }
+
+  async #bootProviders () {
+    for (const provider of this.#providers) {
+      await provider.boot?.()
+    }
+
+    return this
   }
 }
