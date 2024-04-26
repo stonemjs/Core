@@ -1,4 +1,5 @@
 import deepmerge from 'deepmerge'
+// import { isClass } from '@stone-js/common'
 
 /**
  * Subscriber Decorator: Useful for customizing classes as subscriber.
@@ -11,9 +12,9 @@ import deepmerge from 'deepmerge'
  */
 export const Subscriber = (options = {}) => {
   return (target) => {
-    if (!isClass(target)) {
-      throw new TypeError('This decorator can only be applied at class level.')
-    }
+    // if (!isClass(target)) {
+    //   throw new TypeError('This decorator can only be applied at class level.')
+    // }
 
     const metadata = {
       subscriber: options

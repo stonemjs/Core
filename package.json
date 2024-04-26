@@ -31,6 +31,16 @@
         "default": "./dist/index.cjs"
       }
     },
+    "./config": {
+      "import": {
+        "types": "./dist/types/config.d.mts",
+        "default": "./dist/config.mjs"
+      },
+      "require": {
+        "types": "./dist/types/config.d.mts",
+        "default": "./dist/config.cjs"
+      }
+    },
     "./decorators": {
       "import": {
         "types": "./dist/types/decorators.d.mts",
@@ -62,6 +72,7 @@
   "dependencies": {
     "@stone-js/common": "^1.0.0",
     "@stone-js/config": "^1.0.0",
+    "@stone-js/pipeline": "^1.0.0",
     "@stone-js/service-container": "^1.0.0",
     "deepmerge": "^4.3.1"
   },

@@ -1,4 +1,5 @@
 import deepmerge from 'deepmerge'
+import { isClass } from '@stone-js/common'
 
 /**
  * Listener Decorator: Useful for customizing classes as listener.

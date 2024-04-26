@@ -4,7 +4,7 @@ const NodePolyfillPlugin = require('node-polyfill-webpack-plugin')
 
 module.exports = (env) => {
   return {
-    mode: env.prod ? 'production' : 'development',
+    mode: 'development',
     entry: {
       simple: path.resolve(__dirname, './src/simple.mjs'),
       configurations: path.resolve(__dirname, './src/configurations.mjs'),

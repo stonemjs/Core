@@ -1,4 +1,5 @@
-import { ServiceProvider } from './ServiceProvider.mjs'
+import deepmerge from 'deepmerge'
+import { isClass } from '@stone-js/common'
 
 /**
  * Decorators, usefull for decorating classes.
@@ -19,5 +20,17 @@ import { ServiceProvider } from './ServiceProvider.mjs'
  * @return {Function}
  */
 export const App = (options) => {
-  return ServiceProvider({ ...options, isMainApplication: true })
+  return (target) => {
+    if (!isClass(target)) {
+      throw new TypeError('This decorator can only be applied at class level.')
+    }
+
+    const metadata = {
+      mainHandler: options
+    }
+
+    target.$$metadata$$ = deepmerge(target.$$metadata$$ ?? {}, metadata)
+
+    return target
+  }
 }

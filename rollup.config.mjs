@@ -7,8 +7,9 @@ import nodePolyfills from 'rollup-plugin-polyfill-node'
 import nodeExternals from 'rollup-plugin-node-externals'
 
 const inputs = {
+  config: 'src/config/*.mjs',
   decorators: 'src/decorators/*.mjs',
-  index: ['src/StoneFactory.mjs', 'src/Event.mjs'],
+  index: ['src/StoneFactory.mjs', 'src/Event.mjs', 'src/AbstractProvider.mjs', 'src/ErrorHandler.mjs'],
 }
 
 export default Object.entries(inputs).map(([name, input]) => ({

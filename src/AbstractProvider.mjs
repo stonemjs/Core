@@ -21,6 +21,10 @@ export class AbstractProvider {
     return this.#container
   }
 
+  get config () {
+    return this.#container.config
+  }
+
   /**
    * Register any application services.
    *

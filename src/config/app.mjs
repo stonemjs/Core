@@ -1,4 +1,4 @@
-export default {
+export const app = {
   // App namespace
   app: {
 
@@ -24,8 +24,8 @@ export default {
     // This value is used for encryption purpose all over your application.
     secret: null,
 
-    // Here you can defined the adapters for you application.
-    adapters: [],
+    // Here you can defined the entry point for you application.
+    handler: null,
 
     // Here you can defined common adapter's options.
     adapter: {
@@ -62,7 +62,7 @@ export default {
 
         // Terminate mapper middleware. Can be class constructor or alias.
         terminate: []
-      },
+      }
     },
 
     // Here you can defined logging settings for all adapters.
@@ -77,6 +77,10 @@ export default {
       // Should report again a reported Error.
       withoutDuplicates: false
     },
+
+    // Here you can register your application routes.
+    // This array of services will be automatically registered when this application is started.
+    routes: [],
 
     // Here you can register services for all adapters.
     // This array of services will be automatically registered when this application is started.

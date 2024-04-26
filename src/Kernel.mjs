@@ -1,6 +1,10 @@
 import { Event } from './Event.mjs'
+import { Config } from '@stone-js/config'
 import { Pipeline } from '@stone-js/pipeline'
-import { IncomingEvent, isClass, isFunction } from '@stone-js/common'
+import { EventEmitter } from './EventEmitter.mjs'
+import { ErrorHandler } from './ErrorHandler.mjs'
+import { Container } from '@stone-js/service-container'
+import { IncomingEvent, RuntimeError, isClass, isFunction } from '@stone-js/common'
 
 /**
  * Class representing a Kernel.
@@ -15,7 +19,6 @@ export class Kernel {
   #providers
   #eventEmitter
   #currentEvent
-  #errorHandler
   #currentResponse
   #registeredProviders
 
@@ -40,9 +43,10 @@ export class Kernel {
     this.#booted = false
     this.#providers = new Set()
     this.#registeredProviders = new Set()
-    
+
     this
       .#registerBaseBindings(options)
+      .#registerErrorHandler()
       .#makeHandler(handler)
       .#makeProviders()
   }
@@ -79,7 +83,7 @@ export class Kernel {
 
   /** @return {Function[]} */
   get routeMiddleware () {
-    const route = this.#currentEvent.route()
+    const route = this.#currentEvent?.route?.()
     return route ? this.router?.gatherRouteMiddleware(route) : []
   }
 
@@ -112,7 +116,7 @@ export class Kernel {
       await provider.beforeHandle?.()
     }
 
-    await this.#handler.beforeHandle?.()
+    await this.#handler?.beforeHandle?.()
 
     await this._onRegister()
   }
@@ -127,7 +131,7 @@ export class Kernel {
       await provider.onTerminate?.()
     }
 
-    await this.#handler.onTerminate?.()
+    await this.#handler?.onTerminate?.()
 
     await Pipeline
       .create(this.#container)
@@ -143,7 +147,7 @@ export class Kernel {
    * @protected
    */
   async _onRegister () {
-    await this.#handler.register?.()
+    await this.#handler?.register?.()
     await this.#registerProviders()
 
     this.#registerServices()
@@ -167,8 +171,8 @@ export class Kernel {
     }
 
     this.#currentEvent = event
-    this.#container.registerInstance('originalEvent', event.clone())
-    this.#container.registerInstance(IncomingEvent, event, ['event'])
+    event.clone && this.#container.autoBinding('originalEvent', event.clone())
+    this.#container.autoBinding(IncomingEvent, event, true, ['event', 'request'])
 
     if (this.#booted) return
 
@@ -225,6 +229,8 @@ export class Kernel {
    * @returns {(OutgoingResponse|OutgoingHttpResponse)}
    */
   async _prepareResponse (event) {
+    if (!this.#currentResponse) return
+
     this.#eventEmitter.emit(Event.PREPARING_RESPONSE, new Event(Event.PREPARING_RESPONSE, this, { event, response: this.#currentResponse }))
     this.#currentResponse = await this.#currentResponse.prepare(event)
     this.#eventEmitter.emit(Event.RESPONSE_PREPARED, new Event(Event.RESPONSE_PREPARED, this, { event, response: this.#currentResponse }))
@@ -245,25 +251,22 @@ export class Kernel {
     this.#container = new Container()
     this.#config = new Config(options)
     this.#eventEmitter = new EventEmitter()
-    this.#errorHandler = new ErrorHandler(this.#container)
 
     this
       .#container
       .instance(Config, this.#config)
       .instance(Container, this.#container)
-      .instance(ErrorHandler, this.#errorHandler)
       .instance(EventEmitter, this.#eventEmitter)
       .alias(Config, 'config')
       .alias(Container, 'container')
       .alias(EventEmitter, 'events')
-      .alias(ErrorHandler, 'errorHandler')
       .alias(EventEmitter, 'eventEmitter')
 
     return this
   }
 
   #makeHandler (handler) {
-    this.#handler = isClass(handler) ? new handler(this.#container) : handler
+    this.#handler = isClass(handler) ? this.#container.resolve(handler) : handler
 
     return this
   }
@@ -277,10 +280,16 @@ export class Kernel {
     return this
   }
 
+  #registerErrorHandler () {
+    this.#container.autoBinding(ErrorHandler, ErrorHandler, true, 'errorHandler')
+
+    return this
+  }
+
   async #registerProviders () {
     for (const provider of this.#providers) {
       if (!provider.register) {
-        throw new LogicException(`This provider ${provider.toString()} must contain a register method`)
+        throw new RuntimeError(`This provider ${provider.toString()} must contain a register method`)
       }
 
       if (this.#registeredProviders.has(provider.constructor.name)) {
@@ -305,13 +314,13 @@ export class Kernel {
   }
 
   #registerListeners () {
-    this
-      .#providers
+    Array
+      .from(this.#providers.values())
       .reduce(
         (prev, provider) => prev.concat(Object.entries(provider.listeners ?? {})),
         Object.entries(this.#config.get('app.listeners', {}))
       )
-      .forEach(([event, listeners]) => {
+      .forEach(([event, listeners = []]) => {
         listeners.forEach((listener) => {
           this.#eventEmitter.on(event, (e) => this.#container.resolve(listener, true).handle(e))
         })
@@ -320,8 +329,8 @@ export class Kernel {
   }
 
   #registerSubscribers () {
-    this
-      .#providers
+    Array
+      .from(this.#providers.values())
       .reduce(
         (prev, provider) => prev.concat(provider.subscribers ?? []),
         this.#config.get('app.subscribers', [])
@@ -331,8 +340,8 @@ export class Kernel {
   }
 
   #registerAlias () {
-    this
-      .#providers
+    Array
+      .from(this.#providers.values())
       .reduce(
         (prev, provider) => prev.concat(Object.entries(provider.aliases ?? {})),
         Object.entries(this.#config.get('app.aliases', {}))
@@ -343,18 +352,18 @@ export class Kernel {
   }
 
   #registerMappers () {
-    if (this.#config.has('app.mapper.input.type')) {
-      const Mapper = this.#config.has('app.mapper.input.type')
-      const resolver = this.#config.has('app.mapper.input.resolver')
-      const middleware = this.#config.has('app.mapper.input.middleware', [])
+    if (this.#config.get('app.mapper.input.type')) {
+      const Mapper = this.#config.get('app.mapper.input.type')
+      const resolver = this.#config.get('app.mapper.input.resolver')
+      const middleware = this.#config.get('app.mapper.input.middleware', [])
 
       this.#container.singleton('inputMapper', (container) => Mapper.create(container, middleware, resolver))
     }
 
-    if (this.#config.has('app.mapper.output.type')) {
-      const Mapper = this.#config.has('app.mapper.output.type')
-      const resolver = this.#config.has('app.mapper.output.resolver')
-      const middleware = this.#config.has('app.mapper.output.middleware', [])
+    if (this.#config.get('app.mapper.output.type')) {
+      const Mapper = this.#config.get('app.mapper.output.type')
+      const resolver = this.#config.get('app.mapper.output.resolver')
+      const middleware = this.#config.get('app.mapper.output.middleware', [])
 
       this.#container.singleton('outputMapper', (container) => Mapper.create(container, middleware, resolver))
     }

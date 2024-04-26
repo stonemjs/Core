@@ -1,6 +1,6 @@
 import deepmerge from 'deepmerge'
 import { Kernel } from './Kernel.mjs'
-import { isClass } from '@stone-js/common'
+import { RuntimeError, isClass } from '@stone-js/common'
 
 /**
  * Class representing StoneFactory.
@@ -13,38 +13,34 @@ export class StoneFactory {
 
   #hooks
   #options
-  #handler
 
   /**
    * Create a Stone.js application.
    *
-   * @param   {Function} [handler=null] - User-defined application handler.
-   * @param   {Object} [options={}] - Application configuration options.
+   * @param   {(Function|Object)} options - Application configuration options or user-defined application handler.
    * @returns {StoneFactory} An Application object.
    */
-  static create (handler = null, options = {}) {
-    return new this(handler, options)
+  static create (options) {
+    return new this(options)
   }
 
   /**
    * Create a Stone.js application and run it.
    *
-   * @param   {Function} [handler=null] - User-defined application handler.
-   * @param   {runnerOptions} [options={}] - AppRunner configuration options.
+   * @param   {(Function|Object)} options - Application configuration options or user-defined application handler.
    * @returns {*}
    */
-  static createAndRun (handler = null, options = {}) {
-    return this.create(handler, options).run()
+  static createAndRun (options) {
+    return this.create(options).run()
   }
 
   /**
    * Create a Stone.js application.
    *
-   * @param {Function} [handler=null] - User-defined application handler.
-   * @param {Object} [options={}] - Application configuration options.
+   * @param {(Function|Object)} options - Application configuration options or user-defined application handler.
    */
-  constructor (handler = null, options = {}) {
-    this.#handler = handler
+  constructor (options) {
+    this.#hooks = {}
     this.#options = options
   }
 
@@ -83,17 +79,16 @@ export class StoneFactory {
   }
 
   #makeAdapter () {
-    let options = Object.values(this.#options).reduce((prev, option) => deepmerge(prev, option), {})
-
-    const current = options.app.adapters.find((v) => v.app.adapter.default)
+    const current = this.#options.adapters.find((v) => v.app.adapter.default)
     const Adapter = current?.app.adapter.type
-    
+    const handler = this.#options.app.handler
+
     if (!isClass(Adapter)) {
       throw new RuntimeError('No adapters provided.')
     }
 
-    options = deepmerge(options, current)
+    const options = deepmerge(this.#options, current)
 
-    return Adapter.create(() => Kernel.create(this.#handler, options), options.app.adapter)
+    return Adapter.create(() => Kernel.create(handler, options), options.app.adapter)
   }
 }

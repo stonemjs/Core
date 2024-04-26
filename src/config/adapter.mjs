@@ -1,103 +1,106 @@
-export default {
-  // App namespace
-  app: {
+export const adapter = {
+  // Adapters namespace
+  adapters: [{
+    // App namespace
+    app: {
 
-    // Adapter options to be merged with global adapter options.
-    adapter: {
+      // Adapter options to be merged with global adapter options.
+      adapter: {
 
-      // Here you can define your default adapter
-      default: false,
-    
-      // Adapter class constructor.
-      type: null,
+        // Here you can define your default adapter
+        default: false,
 
-      // Dom event to listen to.
-      // Only in browser
-      events: [],
-
-      // Use this to get the target selector where the eventlistener will be attached.
-      // Only in browser
-      targetSelector: [],
-
-      // Base url to run the app.
-      url: 'http://localhost:8080',
-
-      // Node server configs
-      server: {}
-    },
-
-    // Here you can define global app level setting for this adapter.
-    kernel: {
-
-      // Here you can define global app level middleware for this adapter.
-      middleware: {
-
-        // Event middleware. Can be class constructor or alias.
-        event: [],
-
-        // Response middleware. Can be class constructor or alias.
-        response: [],
-
-        // Terminate mapper middleware. Can be class constructor or alias.
-        terminate: []
-      },
-    },
-
-    // Adapter mapper options.
-    mapper: {
-
-      // Input mapper options
-      input: {
-
-        // Mapper class constructor.
+        // Adapter class constructor.
         type: null,
 
-        // Input mapper resolve
-        resolver: null,
+        // Dom event to listen to.
+        // Only in browser
+        events: [],
 
-        // Input mapper middleware. Can be class constructor or alias.
-        // Middleware must be registered before using it in the app middleware array.
-        middleware: []
+        // Use this to get the target selector where the eventlistener will be attached.
+        // Only in browser
+        targetSelector: [],
+
+        // Base url to run the app.
+        url: 'http://localhost:8080',
+
+        // Node server configs
+        server: {}
       },
 
-      // Output mapper options
-      output: {
+      // Here you can define global app level setting for this adapter.
+      kernel: {
 
-        // Mapper class constructor.
-        type: null,
+        // Here you can define global app level middleware for this adapter.
+        middleware: {
 
-        // Output mapper resolve
-        resolver: null,
+          // Event middleware. Can be class constructor or alias.
+          event: [],
 
-        // Output mapper middleware. Can be class constructor or alias.
-        // Middleware must be registered before using it in the app middleware array.
-        middleware: []
-      }
-    },
+          // Response middleware. Can be class constructor or alias.
+          response: [],
 
-    // Here you can defined logging settings for this adapters.
-    logging: {
+          // Terminate mapper middleware. Can be class constructor or alias.
+          terminate: []
+        }
+      },
 
-      // Defined Error class log levels. e.g: { TypeError: 'warn' }.
-      levels: {},
+      // Adapter mapper options.
+      mapper: {
 
-      // Error class to not report.  e.g: [TypeError].
-      dontReport: [],
+        // Input mapper options
+        input: {
 
-      // Should report again a reported Error.
-      withoutDuplicates: false
-    },
+          // Mapper class constructor.
+          type: null,
 
-    // Here you can register middleware for this adapter.
-    // This array of middleware will be automatically registered when this application is started.
-    middleware: [],
+          // Input mapper resolve
+          resolver: null,
 
-    // Here you can register providers for this adapter.
-    // The service providers listed here will be automatically loaded at each request to your application.
-    providers: [],
+          // Input mapper middleware. Can be class constructor or alias.
+          // Middleware must be registered before using it in the app middleware array.
+          middleware: []
+        },
 
-    // Here you can register alias for this adapter.
-    // This array of class aliases will be registered when the application is started.
-    aliases: {}
-  }
+        // Output mapper options
+        output: {
+
+          // Mapper class constructor.
+          type: null,
+
+          // Output mapper resolve
+          resolver: null,
+
+          // Output mapper middleware. Can be class constructor or alias.
+          // Middleware must be registered before using it in the app middleware array.
+          middleware: []
+        }
+      },
+
+      // Here you can defined logging settings for this adapters.
+      logging: {
+
+        // Defined Error class log levels. e.g: { TypeError: 'warn' }.
+        levels: {},
+
+        // Error class to not report.  e.g: [TypeError].
+        dontReport: [],
+
+        // Should report again a reported Error.
+        withoutDuplicates: false
+      },
+
+      // Here you can register middleware for this adapter.
+      // This array of middleware will be automatically registered when this application is started.
+      middleware: [],
+
+      // Here you can register providers for this adapter.
+      // The service providers listed here will be automatically loaded at each request to your application.
+      providers: [],
+
+      // Here you can register alias for this adapter.
+      // This array of class aliases will be registered when the application is started.
+      aliases: {}
+    }
+  }]
 }

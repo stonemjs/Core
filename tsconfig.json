@@ -2,6 +2,7 @@
   // https://www.typescriptlang.org/docs/handbook/declaration-files/dts-from-js.html
   "include": [
     "dist/index.mjs",
+    "dist/config.mjs",
     "dist/decorators.mjs"
   ],
   "compilerOptions": {
