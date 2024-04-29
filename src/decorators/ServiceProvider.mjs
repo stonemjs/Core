@@ -1,5 +1,5 @@
 import deepmerge from 'deepmerge'
-import { isClass } from '@stone-js/common'
+import { isConstructor } from '@stone-js/common'
 import { AbstractProvider } from '../AbstractProvider.mjs'
 
 /**
@@ -14,7 +14,7 @@ import { AbstractProvider } from '../AbstractProvider.mjs'
  */
 export const ServiceProvider = (options) => {
   return (target) => {
-    if (!isClass(target)) {
+    if (!isConstructor(target)) {
       throw new TypeError('This decorator can only be applied at class level.')
     }
 

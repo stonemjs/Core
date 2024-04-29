@@ -4,7 +4,7 @@ import { Pipeline } from '@stone-js/pipeline'
 import { EventEmitter } from './EventEmitter.mjs'
 import { ErrorHandler } from './ErrorHandler.mjs'
 import { Container } from '@stone-js/service-container'
-import { IncomingEvent, RuntimeError, isClass, isFunction } from '@stone-js/common'
+import { IncomingEvent, RuntimeError, isConstructor, isFunction } from '@stone-js/common'
 
 /**
  * Class representing a Kernel.
@@ -47,8 +47,8 @@ export class Kernel {
     this
       .#registerBaseBindings(options)
       .#registerErrorHandler()
-      .#makeHandler(handler)
       .#makeProviders()
+      .#registerHandler(handler)
   }
 
   /** @return {Container} */
@@ -91,20 +91,8 @@ export class Kernel {
   get terminateMiddleware () {
     return this
       .routeMiddleware
-      .filter(v => isClass(v) && !!v.prototype.terminate)
+      .filter(v => isConstructor(v) && !!v.prototype.terminate)
       .concat(this.middleware.terminate ?? [])
-  }
-
-  /**
-   * Handle IncomingEvent.
-   *
-   * @param   {(IncomingEvent|IncomingHttpEvent)} event
-   * @returns {(OutgoingResponse|OutgoingHttpResponse)}
-   */
-  async handle (event) {
-    await this._onBootstrap(event)
-    await this._sendEventThroughDestination(event)
-    return this._prepareResponse(event)
   }
 
   /**
@@ -122,16 +110,28 @@ export class Kernel {
   }
 
   /**
+   * Handle IncomingEvent.
+   *
+   * @param   {(IncomingEvent|IncomingHttpEvent)} event
+   * @returns {(OutgoingResponse|OutgoingHttpResponse)}
+   */
+  async handle (event) {
+    await this._onBootstrap(event)
+    await this._sendEventThroughDestination(event)
+    return this._prepareResponse(event)
+  }
+
+  /**
    * Hook that runs just before of just after returning the response.
    * Useful to make some cleanup.
    * Invoke kernel, router and current route terminate middlewares.
    */
   async onTerminate () {
+    await this.#handler?.onTerminate?.()
+
     for (const provider of this.#providers) {
       await provider.onTerminate?.()
     }
-
-    await this.#handler?.onTerminate?.()
 
     await Pipeline
       .create(this.#container)
@@ -147,7 +147,6 @@ export class Kernel {
    * @protected
    */
   async _onRegister () {
-    await this.#handler?.register?.()
     await this.#registerProviders()
 
     this.#registerServices()
@@ -155,6 +154,8 @@ export class Kernel {
     this.#registerListeners()
     this.#registerMappers()
     this.#registerSubscribers()
+
+    await this.#handler?.register?.()
   }
 
   /**
@@ -265,17 +266,17 @@ export class Kernel {
     return this
   }
 
-  #makeHandler (handler) {
-    this.#handler = isClass(handler) ? this.#container.resolve(handler) : handler
-
-    return this
-  }
-
   #makeProviders () {
     this
       .#config
       .get('app.providers', [])
       .forEach((Class) => this.#providers.add(this.#container.resolve(Class, true)))
+
+    return this
+  }
+
+  #registerHandler (handler) {
+    this.#handler = isConstructor(handler) ? this.#container.resolve(handler, true) : handler
 
     return this
   }
@@ -304,8 +305,6 @@ export class Kernel {
         await provider.boot?.()
       }
     }
-
-    return this
   }
 
   #registerServices () {
@@ -325,6 +324,7 @@ export class Kernel {
           this.#eventEmitter.on(event, (e) => this.#container.resolve(listener, true).handle(e))
         })
       })
+
     return this
   }
 
@@ -336,6 +336,7 @@ export class Kernel {
         this.#config.get('app.subscribers', [])
       )
       .forEach((subscriber) => this.#container.resolve(subscriber, true).subscribe(this.#eventEmitter))
+
     return this
   }
 
@@ -346,7 +347,7 @@ export class Kernel {
         (prev, provider) => prev.concat(Object.entries(provider.aliases ?? {})),
         Object.entries(this.#config.get('app.aliases', {}))
       )
-      .forEach(([Class, alias]) => isClass(Class) && this.#container.alias(Class, alias))
+      .forEach(([Class, alias]) => isConstructor(Class) && this.#container.alias(Class, alias))
 
     return this
   }
@@ -375,7 +376,5 @@ export class Kernel {
     for (const provider of this.#providers) {
       await provider.boot?.()
     }
-
-    return this
   }
 }

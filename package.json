@@ -17,7 +17,11 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/types/index.d.mts",
+  "bin": {
+    "stone": "bin/stone.mjs"
+  },
   "files": [
+    "/bin",
     "/dist"
   ],
   "exports": {
@@ -73,12 +77,14 @@
     "@stone-js/common": "^1.0.0",
     "@stone-js/config": "^1.0.0",
     "@stone-js/pipeline": "^1.0.0",
+    "@stone-js/adapters": "^1.0.0",
     "@stone-js/service-container": "^1.0.0",
     "deepmerge": "^4.3.1"
   },
   "devDependencies": {
     "@babel/core": "^7.22.20",
     "@babel/eslint-parser": "^7.22.15",
+    "@babel/plugin-proposal-json-modules": "^7.24.3",
     "@babel/preset-env": "^7.22.20",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-commonjs": "^25.0.7",
@@ -92,8 +98,9 @@
     "jsdoc": "^4.0.2",
     "rimraf": "^5.0.5",
     "rollup": "^4.1.5",
-    "rollup-plugin-polyfill-node": "^0.13.0",
+    "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-node-externals": "^6.1.2",
+    "rollup-plugin-polyfill-node": "^0.13.0",
     "standard": "^17.1.0",
     "typescript": "^5.2.2"
   },
