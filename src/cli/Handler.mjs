@@ -1,7 +1,7 @@
 import { Config } from '@stone-js/config'
-import { packageJson } from './utils.mjs'
 import { testTask } from './task-test.mjs'
 import { Mapper } from '@stone-js/adapters'
+import { version } from '../../package.json'
 import { buildTask } from './task-build.mjs'
 import { serveTask } from './task-serve.mjs'
 import { customTask } from './task-custom.mjs'
@@ -9,6 +9,12 @@ import { mapperInputResolver } from './resolvers.mjs'
 import { Container } from '@stone-js/service-container'
 import { CommonInputMiddleware } from './middleware.mjs'
 
+/**
+ * Class representing a Stone.js console Handler.
+ *
+ * @version 0.0.1
+ * @author Mr. Stone <evensstone@gmail.com>
+ */
 export class Handler {
   #container
 
@@ -92,6 +98,6 @@ export class Handler {
         desc: 'Execute tests'
       })
       .help()
-      .version(packageJson.version)
+      .version(version)
   }
 }

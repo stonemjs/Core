@@ -20,6 +20,7 @@ export default Object.entries(inputs).map(([name, input]) => ({
     { format: 'es', file: `dist/${name}.mjs` },
     { format: 'cjs', file: `dist/${name}.cjs` }
   ],
+  external: ['@babel/core', 'fs-extra/esm', /^@?rollup/, 'glob'],
   plugins: [
     json(),
     multi(),

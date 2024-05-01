@@ -64,22 +64,24 @@ export class StoneFactory {
   /**
    * Run handler.
    *
+   * @param   {string} [alias=null] - Adapter alias name.
    * @returns {*}
    * @throws  {RuntimeError}
    */
-  async run () {
-    return this.#makeAdapter().hooks(this.#hooks).run()
+  async run (alias = null) {
+    return this.#makeAdapter(alias).hooks(this.#hooks).run()
   }
 
   /**
    * Make current adapter.
    * Select the current adapter and create an instance.
    *
+   * @param   {string} [alias=null] - Adapter alias name.
    * @returns {Adapter}
    * @throws  {RuntimeError}
    */
-  #makeAdapter () {
-    const current = this.#options.adapters.find((v) => v.app.adapter.default)
+  #makeAdapter (alias) {
+    const current = this.#options.adapters.find((v) => alias === v.app.adapter.alias || v.app.adapter.default)
     const Adapter = current?.app.adapter.type
     const handler = this.#options.app.handler
 
