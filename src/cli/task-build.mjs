@@ -1,21 +1,23 @@
+import { setCache } from './utils.mjs'
 import { emptyDirSync } from 'fs-extra/esm'
 import { Pipeline } from '@stone-js/pipeline'
-import { setCache, workingDir } from './utils.mjs'
+import { buildPath, distPath } from '@stone-js/common'
 import { rollupBuild, rollupBundle } from './rollupjs.mjs'
 import { makeBootstrapFile, makeConsoleBootstrapFile } from './stubs.mjs'
 
 const buildPipes = [
   pipeable((container) => container.output.info('Changes detected, building...')),
-  pipeable(() => emptyDirSync(workingDir('./.stone'))),
+  pipeable(() => emptyDirSync(buildPath())),
   pipeable((container) => rollupBuild(container.config)),
   pipeable((container) => setCache(container.config)),
   pipeable(() => makeBootstrapFile()),
-  pipeable(() => makeConsoleBootstrapFile())
+  pipeable(() => makeConsoleBootstrapFile()),
+  pipeable((container) => container.output.info('Build finished'))
 ]
 
 const bundlePipes = [
   pipeable((container) => container.output.info('Bundling...')),
-  pipeable(() => emptyDirSync(workingDir('./dist'))),
+  pipeable(() => emptyDirSync(distPath())),
   pipeable(() => rollupBundle())
 ]
 
@@ -32,12 +34,12 @@ function pipeable (handler) {
  * @param   {Container} container
  * @returns {void}
  */
-export async function buildApp (container) {
-  await Pipeline
+export function buildApp (container, onComplete) {
+  return Pipeline
     .create()
     .send(container)
     .through(buildPipes)
-    .thenReturn()
+    .then((passable) => onComplete(passable))
 }
 
 /**
@@ -46,12 +48,12 @@ export async function buildApp (container) {
  * @param   {Container} container
  * @returns {void}
  */
-export async function bundleApp (container) {
-  await Pipeline
+export function bundleApp (container, onComplete) {
+  return Pipeline
     .create()
     .send(container)
     .through(bundlePipes)
-    .thenReturn()
+    .then((passable) => onComplete(passable))
 }
 
 /**
@@ -61,8 +63,8 @@ export async function bundleApp (container) {
  * @param   {Container} container
  * @returns {void}
  */
-export async function buildTask (_event, container) {
-  await Pipeline
+export function buildTask (container) {
+  return Pipeline
     .create()
     .send(container)
     .through(buildPipes.concat(bundlePipes))

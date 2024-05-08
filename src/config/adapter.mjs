@@ -7,6 +7,9 @@ export const adapter = {
       // Adapter options to be merged with global adapter options.
       adapter: {
 
+        // Here you can define your adapter alias name
+        alias: null,
+
         // Here you can define your default adapter
         default: false,
 
@@ -48,7 +51,8 @@ export const adapter = {
       // Adapter mapper options.
       mapper: {
 
-        // Input mapper options
+        // Input mapper options.
+        // Use this mapper for incomming platform event.
         input: {
 
           // Mapper class constructor.
@@ -62,7 +66,8 @@ export const adapter = {
           middleware: []
         },
 
-        // Output mapper options
+        // Output mapper options.
+        // Use this mapper for outgoing app response.
         output: {
 
           // Mapper class constructor.
@@ -93,6 +98,14 @@ export const adapter = {
       // Here you can register middleware for this adapter.
       // This array of middleware will be automatically registered when this application is started.
       middleware: [],
+
+      // Here you can register your application commands.
+      // This array of services will be automatically registered when this application is started.
+      commands: [],
+
+      // Here you can register services for all adapters.
+      // This array of services will be automatically registered when this application is started.
+      services: [],
 
       // Here you can register providers for this adapter.
       // The service providers listed here will be automatically loaded at each request to your application.

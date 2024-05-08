@@ -81,7 +81,8 @@ export class StoneFactory {
    * @throws  {RuntimeError}
    */
   #makeAdapter (alias) {
-    const current = this.#options.adapters.find((v) => alias === v.app.adapter.alias || v.app.adapter.default)
+    const aliases = [alias, this.#options.app.adapter.current].filter(v => !!v)
+    const current = this.#options.adapters.find((v) => aliases.includes(v.app.adapter.alias) || v.app.adapter.default)
     const Adapter = current?.app.adapter.type
     const handler = this.#options.app.handler
 

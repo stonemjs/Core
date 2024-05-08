@@ -1,4 +1,3 @@
-import copy from 'rollup-plugin-copy'
 import json from '@rollup/plugin-json'
 import babel from '@rollup/plugin-babel'
 import multi from '@rollup/plugin-multi-entry'
@@ -17,8 +16,7 @@ const inputs = {
 export default Object.entries(inputs).map(([name, input]) => ({
 	input,
 	output: [
-    { format: 'es', file: `dist/${name}.mjs` },
-    { format: 'cjs', file: `dist/${name}.cjs` }
+    { format: 'es', file: `dist/${name}.js` }
   ],
   external: ['@babel/core', 'fs-extra/esm', /^@?rollup/, 'glob'],
   plugins: [
@@ -26,12 +24,10 @@ export default Object.entries(inputs).map(([name, input]) => ({
     multi(),
     nodePolyfills({ include: ['events'], sourceMap: true }),
     nodeExternals({ deps: false }), // Must always be before `nodeResolve()`.
-    nodeResolve(),
-    babel({ babelHelpers: 'bundled' }),
-    commonjs(),
-    copy({
-      targets: [{ src: 'package.json', dest: 'dist' }],
-      copyOnce: true
+    nodeResolve({
+      exportConditions: ['node', 'import', 'require', 'default']
     }),
+    babel({ babelHelpers: 'bundled' }),
+    commonjs()
   ]
 }))

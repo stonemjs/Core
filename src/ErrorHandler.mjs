@@ -33,31 +33,68 @@ export class ErrorHandler {
     this.#withoutDuplicates = container.config.get('app.logging.withoutDuplicates', false)
   }
 
+  /**
+   * Determine log level by error class.
+   *
+   * @param   {Function} Class
+   * @param   {string} level
+   * @returns {this}
+   */
   level (Class, level) {
     this.#levels[Class] = level
     return this
   }
 
+  /**
+   * Do not report this error class.
+   *
+   * @param   {Function} Class
+   * @returns {this}
+   */
   ignore (Class) {
     this.#dontReport.push(Class)
     return this
   }
 
+  /**
+   * Report this error class.
+   *
+   * @param   {Function} Class
+   * @returns {this}
+   */
   stopIgnoring (Class) {
     this.#dontReport = this.#dontReport.filter(v => v !== Class)
     return this
   }
 
+  /**
+   * Report this error class multiple times.
+   *
+   * @returns {this}
+   */
   reportDuplicates () {
     this.#withoutDuplicates = false
     return this
   }
 
+  /**
+   * Dont report this error class multiple times.
+   *
+   * @param   {Function} Class
+   * @param   {string} level
+   * @returns {this}
+   */
   dontReportDuplicates () {
     this.#withoutDuplicates = true
     return this
   }
 
+  /**
+   * Check if this error instance should be reported or not.
+   *
+   * @param   {Object} error
+   * @returns {boolean}
+   */
   shouldReport (error) {
     if (this.#withoutDuplicates && this.#reportedError.has(error)) {
       return false
@@ -66,6 +103,12 @@ export class ErrorHandler {
     return this.#dontReport.filter(Class => error instanceof Class).length === 0
   }
 
+  /**
+   * Report this error instance.
+   *
+   * @param   {Object} error
+   * @returns {this}
+   */
   report (error) {
     if (this.shouldReport(error)) {
       this.#reportError(error)
@@ -73,6 +116,12 @@ export class ErrorHandler {
     return this
   }
 
+  /**
+   * Prepare this error instance for rendering.
+   *
+   * @param   {Object} error
+   * @returns {Object}
+   */
   render (error) {
     const code = error.code
     const status = error.statusCode ?? 500
@@ -85,7 +134,13 @@ export class ErrorHandler {
     }
   }
 
-  async #reportError (error) {
+  /**
+   * Report this error instance.
+   *
+   * @param   {Object} error
+   * @returns {this}
+   */
+  #reportError (error) {
     this.#reportedError.add(error)
 
     const level = Object.entries(this.#levels).find(([Class]) => error instanceof Class)?.[1] ?? 'error'
@@ -96,8 +151,16 @@ export class ErrorHandler {
     logger[level]
       ? logger[level](errorContext, error.message)
       : logger.error(errorContext, error.message)
+
+    return this
   }
 
+  /**
+   * Build error context object.
+   *
+   * @param   {Object} error
+   * @returns {Object}
+   */
   #buildErrorContext (error) {
     const context = [{ error }]
     error.context && context.push(error.context)

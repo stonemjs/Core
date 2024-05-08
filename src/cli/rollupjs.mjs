@@ -1,12 +1,11 @@
-import { rollup, watch } from 'rollup'
 import deepmerge from 'deepmerge'
+import { rollup, watch } from 'rollup'
 import babel from '@rollup/plugin-babel'
-import { workingDir } from './utils.mjs'
-import terser from '@rollup/plugin-terser'
 import multi from '@rollup/plugin-multi-entry'
 import commonjs from '@rollup/plugin-commonjs'
 import nodeResolve from '@rollup/plugin-node-resolve'
 import nodeExternals from 'rollup-plugin-node-externals'
+import { basePath, buildPath, distPath } from '@stone-js/common'
 
 /**
  * Rollup build.
@@ -44,23 +43,17 @@ export function rollupWatch (config) {
   const options = makeBuildOptions(config.get('autoload.modules'), config.get('rollupOtions', {}))
   const watcher = watch(options)
 
-  watcher.on('event', ({ result }) => {
-    if (result) {
-      result.close()
-    }
-  })
-
-  watcher.on('change', (id, { event }) => {
-    console.log('on change', id)
-  })
-
-  watcher.on('restart', () => {
-    console.log('on restart')
-  })
-
-  watcher.on('close', () => {
-    console.log('on close')
-  })
+  watcher
+    .on('change', (id, { event }) => console.log('file', event, id))
+    .on('event', ({ code, result }) => {
+      if (code === 'BUNDLE_END' && result) {
+        const promises = options.reduce((prev, option) => prev.concat(option.output.map(result.write)), [])
+        Promise.all(promises).then(() => {
+          result.close()
+          console.log('File builded!')
+        }).catch((error) => console.error(error))
+      }
+    })
 }
 
 /**
@@ -73,12 +66,12 @@ export function rollupWatch (config) {
  */
 function makeBuildOptions (inputs, options = {}) {
   return Object.entries(inputs).map(([name, input]) => deepmerge({
-    input: workingDir(input),
+    input: basePath(input),
     output: [
-      { format: 'es', file: workingDir(`.stone/${name}.mjs`) }
+      { format: 'es', file: buildPath(`${name}.mjs`) }
     ],
     watch: {
-      include: workingDir(input),
+      include: basePath(input),
       exclude: './node_modules/**',
       clearScreen: false
     },
@@ -102,9 +95,10 @@ function makeBuildOptions (inputs, options = {}) {
  */
 function makeBundleOptions () {
   return {
-    input: workingDir('.stone/app.bootstrap.mjs'),
+    input: buildPath('app.bootstrap.mjs'),
     output: [
-      { format: 'es', file: workingDir('dist/stone.mjs'), plugins: terser() }
+      { format: 'es', file: distPath('stone.mjs') }
+      // { format: 'es', file: distPath('stone.mjs'), plugins: terser() }
     ],
     plugins: [
       nodeExternals({ deps: false }), // Must always be before `nodeResolve()`.

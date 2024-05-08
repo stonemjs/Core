@@ -30,6 +30,10 @@ export const app = {
     // Here you can defined common adapter's options.
     adapter: {
 
+      // Here you can set the current adapter alias.
+      // This value will be used to determine the adapter at runtime.
+      current: null,
+
       // Dom event to listen to.
       // Only in browser
       events: [],

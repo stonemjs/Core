@@ -1,9 +1,9 @@
 {
   // https://www.typescriptlang.org/docs/handbook/declaration-files/dts-from-js.html
   "include": [
-    "dist/index.mjs",
-    "dist/config.mjs",
-    "dist/decorators.mjs"
+    "dist/index.js",
+    "dist/config.js",
+    "dist/decorators.js"
   ],
   "compilerOptions": {
     "skipLibCheck": true,

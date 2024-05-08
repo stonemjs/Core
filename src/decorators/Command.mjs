@@ -2,7 +2,7 @@ import deepmerge from 'deepmerge'
 import { isConstructor } from '@stone-js/common'
 
 /**
- * Subscriber Decorator: Useful for customizing classes as subscriber.
+ * Command Decorator: Useful for customizing classes as Command.
  *
  * @author Mr. Stone <evensstone@gmail.com>
  *
@@ -10,14 +10,14 @@ import { isConstructor } from '@stone-js/common'
  * @param  {Object} options - The decorator congiguration options.
  * @return {Function}
  */
-export const Subscriber = (options = {}) => {
+export const Command = (options = {}) => {
   return (target) => {
     if (!isConstructor(target)) {
       throw new TypeError('This decorator can only be applied at class level.')
     }
 
     const metadata = {
-      subscriber: options
+      command: options
     }
 
     target.$$metadata$$ = deepmerge(target.$$metadata$$ ?? {}, metadata)

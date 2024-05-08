@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-import { App, importModuleFromCWD } from '../dist/cli.mjs'
+import { App } from '../dist/cli.js'
+import { getStoneOptions } from '@stone-js/common'
 
-const options = await importModuleFromCWD('./stone.config.mjs') ?? await importModuleFromCWD('./stone.config.js')
-
-if (!options) {
-  throw new TypeError('You must defined a `stone.config.mjs` file at the root of your application.')
-}
+/**
+ * Get stone config options.
+ */
+const stoneOptions = await getStoneOptions()
 
 /**
  * Execute CLI application.
  */
-await App.createAndRun(Object.values(options).shift())
+await App.createAndRun(stoneOptions)

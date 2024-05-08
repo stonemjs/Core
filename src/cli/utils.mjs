@@ -1,33 +1,8 @@
 import { globSync } from 'glob'
-import { join } from 'node:path'
-import { cwd } from 'node:process'
 import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
+import { basePath, buildPath } from '@stone-js/common'
 import { readJsonSync, pathExistsSync, outputJsonSync } from 'fs-extra/esm'
-
-/**
- * Import module from current working directory.
- *
- * @param   {string} relativePath
- * @returns {(Object|null)}
- */
-export async function importModuleFromCWD (relativePath) {
-  try {
-    return await import(new URL(relativePath, `file://${cwd()}/`).href)
-  } catch (_) {
-    return null
-  }
-}
-
-/**
- * Resolve path from current working directory.
- *
- * @param   {...string} paths
- * @returns {string}
- */
-export function workingDir (...paths) {
-  return join(cwd(), ...paths)
-}
 
 /**
  * Get Application Files.
@@ -42,7 +17,7 @@ export function workingDir (...paths) {
 export function getApplicationFiles (config) {
   return Object
     .entries(config.get('autoload.modules'))
-    .map(([name, pattern]) => [name, globSync(workingDir(pattern))])
+    .map(([name, pattern]) => [name, globSync(basePath(pattern))])
 }
 
 /**
@@ -64,8 +39,8 @@ export function getFileHash (filename) {
  * @returns {Object}
  */
 export function getCache () {
-  return pathExistsSync(workingDir('./.stone/.cache'))
-    ? readJsonSync(workingDir('./.stone/.cache'), { throws: false })
+  return pathExistsSync(buildPath('.cache'))
+    ? readJsonSync(buildPath('.cache'), { throws: false })
     : {}
 }
 
@@ -85,7 +60,7 @@ export function setCache (config) {
       cache[filePath] = getFileHash(filePath)
     })
 
-  outputJsonSync(workingDir('./.stone/.cache'), cache)
+  outputJsonSync(buildPath('.cache'), cache)
 }
 
 /**

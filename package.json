@@ -14,47 +14,30 @@
     "Factory",
     "Stone.js"
   ],
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.mjs",
-  "types": "./dist/types/index.d.mts",
   "bin": {
     "stone": "bin/stone.mjs"
   },
+  "type": "module",
   "files": [
     "/bin",
     "/dist"
   ],
   "exports": {
     ".": {
-      "import": {
-        "types": "./dist/types/index.d.mts",
-        "default": "./dist/index.mjs"
-      },
-      "require": {
-        "types": "./dist/types/index.d.mts",
-        "default": "./dist/index.cjs"
-      }
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/index.js"
     },
     "./config": {
-      "import": {
-        "types": "./dist/types/config.d.mts",
-        "default": "./dist/config.mjs"
-      },
-      "require": {
-        "types": "./dist/types/config.d.mts",
-        "default": "./dist/config.cjs"
-      }
+      "types": "./dist/types/config.d.ts",
+      "default": "./dist/config.js"
     },
     "./decorators": {
-      "import": {
-        "types": "./dist/types/decorators.d.mts",
-        "default": "./dist/decorators.mjs"
-      },
-      "require": {
-        "types": "./dist/types/decorators.d.mts",
-        "default": "./dist/decorators.cjs"
-      }
+      "types": "./dist/types/decorators.d.ts",
+      "default": "./dist/decorators.js"
     }
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "scripts": {
     "types": "tsc",
@@ -101,14 +84,10 @@
     "jsdoc": "^4.0.2",
     "rimraf": "^5.0.5",
     "rollup": "^4.1.5",
-    "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-node-externals": "^6.1.2",
     "rollup-plugin-polyfill-node": "^0.13.0",
     "standard": "^17.1.0",
     "typescript": "^5.2.2"
-  },
-  "engines": {
-    "node": "^18.0.0 || >=20.0.0"
   },
   "standard": {
     "parser": "@babel/eslint-parser",

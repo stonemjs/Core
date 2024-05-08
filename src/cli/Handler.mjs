@@ -1,5 +1,4 @@
 import { Config } from '@stone-js/config'
-import { testTask } from './task-test.mjs'
 import { Mapper } from '@stone-js/adapters'
 import { version } from '../../package.json'
 import { buildTask } from './task-build.mjs'
@@ -61,16 +60,13 @@ export class Handler {
   async handle (event) {
     switch (event.get('task')) {
       case 'build':
-        await buildTask(event, this.#container)
+        await buildTask(this.#container, event)
         break
       case 'serve':
-        await serveTask(event, this.#container)
-        break
-      case 'test':
-        await testTask(event, this.#container)
+        await serveTask(this.#container, event)
         break
       default:
-        await customTask(event, this.#container)
+        await customTask(this.#container, event)
         break
     }
   }
@@ -88,14 +84,9 @@ export class Handler {
         desc: 'Build project'
       })
       .command({
-        command: 'serve [adapter]',
+        command: 'serve',
         aliases: ['s'],
         desc: 'Serve project with hot reloading'
-      })
-      .command({
-        command: 'test',
-        aliases: ['t'],
-        desc: 'Execute tests'
       })
       .help()
       .version(version)

@@ -15,6 +15,7 @@ export class Kernel {
   #config
   #booted
   #handler
+  #commands
   #container
   #providers
   #eventEmitter
@@ -41,6 +42,7 @@ export class Kernel {
    */
   constructor (handler = null, options = {}) {
     this.#booted = false
+    this.#commands = new Set()
     this.#providers = new Set()
     this.#registeredProviders = new Set()
 
@@ -91,7 +93,7 @@ export class Kernel {
   get terminateMiddleware () {
     return this
       .routeMiddleware
-      .filter(v => isConstructor(v) && !!v.prototype.terminate)
+      ?.filter(v => isConstructor(v) && !!v.prototype.terminate)
       .concat(this.middleware.terminate ?? [])
   }
 
@@ -136,7 +138,7 @@ export class Kernel {
     await Pipeline
       .create(this.#container)
       .send(this.#currentEvent, this.#currentResponse)
-      .through(this.terminateMiddleware)
+      .through(this.terminateMiddleware ?? [])
       .via('terminate')
       .thenReturn()
   }
@@ -154,6 +156,7 @@ export class Kernel {
     this.#registerListeners()
     this.#registerMappers()
     this.#registerSubscribers()
+    await this.#registerCommands()
 
     await this.#handler?.register?.()
   }
@@ -182,6 +185,7 @@ export class Kernel {
     }
 
     await this.#bootProviders()
+    await this.#handleCommands(event)
 
     this.#booted = true
   }
@@ -233,7 +237,7 @@ export class Kernel {
     if (!this.#currentResponse) return
 
     this.#eventEmitter.emit(Event.PREPARING_RESPONSE, new Event(Event.PREPARING_RESPONSE, this, { event, response: this.#currentResponse }))
-    this.#currentResponse = await this.#currentResponse.prepare(event)
+    this.#currentResponse = await this.#currentResponse.prepare(event, this.#config)
     this.#eventEmitter.emit(Event.RESPONSE_PREPARED, new Event(Event.RESPONSE_PREPARED, this, { event, response: this.#currentResponse }))
 
     this.#currentResponse = await Pipeline
@@ -340,6 +344,22 @@ export class Kernel {
     return this
   }
 
+  async #registerCommands () {
+    Array
+      .from(this.#providers.values())
+      .reduce(
+        (prev, provider) => prev.concat(provider.commands ?? []),
+        this.#config.get('app.commands', [])
+      )
+      .forEach((command) => this.#commands.add(this.#container.resolve(command, true)))
+
+    for (const command of this.#commands) {
+      await command.beforeHandle?.()
+    }
+
+    return this
+  }
+
   #registerAlias () {
     Array
       .from(this.#providers.values())
@@ -375,6 +395,12 @@ export class Kernel {
   async #bootProviders () {
     for (const provider of this.#providers) {
       await provider.boot?.()
+    }
+  }
+
+  async #handleCommands (event) {
+    for (const command of this.#commands) {
+      await command.handle?.(event)
     }
   }
 }
