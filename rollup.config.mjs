@@ -18,7 +18,7 @@ export default Object.entries(inputs).map(([name, input]) => ({
 	output: [
     { format: 'es', file: `dist/${name}.js` }
   ],
-  external: ['@babel/core', 'fs-extra/esm', /^@?rollup/, 'glob'],
+  external: ['@babel/core', 'fs-extra/esm', /^@?rollup/, 'glob', 'chokidar'],
   plugins: [
     json(),
     multi(),

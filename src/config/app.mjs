@@ -52,11 +52,11 @@ export const app = {
     // Here you can define global app level setting for all adapters.
     kernel: {
 
-      // All kernel middleware.
-      skip: false,
-
       // Here you can define global app level middleware for all adapters.
       middleware: {
+
+        // All kernel middleware.
+        skip: false,
 
         // Event middleware. Can be class constructor or alias.
         event: [],

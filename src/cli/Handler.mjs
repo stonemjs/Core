@@ -55,7 +55,7 @@ export class Handler {
    * Handle IncomingEvent.
    *
    * @param   {IncomingEvent} event
-   * @returns {void}
+   * @returns
    */
   async handle (event) {
     switch (event.get('task')) {
@@ -86,7 +86,7 @@ export class Handler {
       .command({
         command: 'serve',
         aliases: ['s'],
-        desc: 'Serve project with hot reloading'
+        desc: 'Serve project'
       })
       .help()
       .version(version)

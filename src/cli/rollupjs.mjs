@@ -1,5 +1,5 @@
+import { rollup } from 'rollup'
 import deepmerge from 'deepmerge'
-import { rollup, watch } from 'rollup'
 import babel from '@rollup/plugin-babel'
 import multi from '@rollup/plugin-multi-entry'
 import commonjs from '@rollup/plugin-commonjs'
@@ -11,7 +11,7 @@ import { basePath, buildPath, distPath } from '@stone-js/common'
  * Rollup build.
  *
  * @param   {Config} config
- * @returns {void}
+ * @returns
  */
 export async function rollupBuild (config) {
   const options = makeBuildOptions(config.get('autoload.modules'), config.get('rollupOtions', {}))
@@ -25,35 +25,12 @@ export async function rollupBuild (config) {
 /**
  * Rollup bundle.
  *
- * @returns {void}
+ * @returns
  */
 export async function rollupBundle () {
   const options = makeBundleOptions()
   const bundle = await rollup(options)
   await Promise.all(options.output.map(bundle.write))
-}
-
-/**
- * Rollup watch.
- *
- * @param   {Config} config
- * @returns {void}
- */
-export function rollupWatch (config) {
-  const options = makeBuildOptions(config.get('autoload.modules'), config.get('rollupOtions', {}))
-  const watcher = watch(options)
-
-  watcher
-    .on('change', (id, { event }) => console.log('file', event, id))
-    .on('event', ({ code, result }) => {
-      if (code === 'BUNDLE_END' && result) {
-        const promises = options.reduce((prev, option) => prev.concat(option.output.map(result.write)), [])
-        Promise.all(promises).then(() => {
-          result.close()
-          console.log('File builded!')
-        }).catch((error) => console.error(error))
-      }
-    })
 }
 
 /**
@@ -70,11 +47,6 @@ function makeBuildOptions (inputs, options = {}) {
     output: [
       { format: 'es', file: buildPath(`${name}.mjs`) }
     ],
-    watch: {
-      include: basePath(input),
-      exclude: './node_modules/**',
-      clearScreen: false
-    },
     plugins: [
       multi(),
       nodeExternals({ deps: false }), // Must always be before `nodeResolve()`.

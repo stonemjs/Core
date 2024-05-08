@@ -60,7 +60,7 @@ const appOptions = await ConfigLoader.create(stoneOptions).load({ modules, optio
 /**
  * Run application.
  */
-await StoneFactory
+StoneFactory
   .create(appOptions)
   .hook('onInit', () => stoneOptions.onInit?.())
   .run(NODE_CONSOLE_PLATFORM)

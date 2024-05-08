@@ -19,7 +19,7 @@ import { isConstructor } from '@stone-js/common'
  * @param  {string} options.name - Application name.
  * @return {Function}
  */
-export const App = (options) => {
+export const App = (options = {}) => {
   return (target) => {
     if (!isConstructor(target)) {
       throw new TypeError('This decorator can only be applied at class level.')

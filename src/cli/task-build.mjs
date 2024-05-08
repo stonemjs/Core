@@ -5,8 +5,9 @@ import { buildPath, distPath } from '@stone-js/common'
 import { rollupBuild, rollupBundle } from './rollupjs.mjs'
 import { makeBootstrapFile, makeConsoleBootstrapFile } from './stubs.mjs'
 
+/** @returns {pipeable[]} */
 const buildPipes = [
-  pipeable((container) => container.output.info('Changes detected, building...')),
+  pipeable((container) => container.output.info('Building...')),
   pipeable(() => emptyDirSync(buildPath())),
   pipeable((container) => rollupBuild(container.config)),
   pipeable((container) => setCache(container.config)),
@@ -15,24 +16,34 @@ const buildPipes = [
   pipeable((container) => container.output.info('Build finished'))
 ]
 
+/** @returns {pipeable[]} */
 const bundlePipes = [
   pipeable((container) => container.output.info('Bundling...')),
   pipeable(() => emptyDirSync(distPath())),
   pipeable(() => rollupBundle())
 ]
 
-function pipeable (handler) {
-  return async (container, next) => {
-    await handler(container)
-    next(container)
-  }
+/**
+ * Build task.
+ *
+ * @param   {Container} container
+ * @param   {IncomingEvent} [event]
+ * @returns {*}
+ */
+export function buildTask (container) {
+  return Pipeline
+    .create()
+    .send(container)
+    .through(buildPipes.concat(bundlePipes))
+    .thenReturn()
 }
 
 /**
  * Build app.
  *
  * @param   {Container} container
- * @returns {void}
+ * @param   {Function} onComplete
+ * @returns {*}
  */
 export function buildApp (container, onComplete) {
   return Pipeline
@@ -43,30 +54,14 @@ export function buildApp (container, onComplete) {
 }
 
 /**
- * Bundle app.
+ * Pipeable.
  *
- * @param   {Container} container
- * @returns {void}
+ * @param   {Function} handler
+ * @returns {Function}
  */
-export function bundleApp (container, onComplete) {
-  return Pipeline
-    .create()
-    .send(container)
-    .through(bundlePipes)
-    .then((passable) => onComplete(passable))
-}
-
-/**
- * Build task.
- *
- * @param   {IncomingEvent} event
- * @param   {Container} container
- * @returns {void}
- */
-export function buildTask (container) {
-  return Pipeline
-    .create()
-    .send(container)
-    .through(buildPipes.concat(bundlePipes))
-    .thenReturn()
+function pipeable (handler) {
+  return async (container, next) => {
+    await handler(container)
+    next(container)
+  }
 }

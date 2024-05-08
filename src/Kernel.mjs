@@ -4,7 +4,7 @@ import { Pipeline } from '@stone-js/pipeline'
 import { EventEmitter } from './EventEmitter.mjs'
 import { ErrorHandler } from './ErrorHandler.mjs'
 import { Container } from '@stone-js/service-container'
-import { IncomingEvent, RuntimeError, isConstructor, isFunction } from '@stone-js/common'
+import { IncomingEvent, RuntimeError, isConstructor, isFunction, OutgoingResponse } from '@stone-js/common'
 
 /**
  * Class representing a Kernel.
@@ -15,7 +15,6 @@ export class Kernel {
   #config
   #booted
   #handler
-  #commands
   #container
   #providers
   #eventEmitter
@@ -42,7 +41,6 @@ export class Kernel {
    */
   constructor (handler = null, options = {}) {
     this.#booted = false
-    this.#commands = new Set()
     this.#providers = new Set()
     this.#registeredProviders = new Set()
 
@@ -84,17 +82,8 @@ export class Kernel {
   }
 
   /** @return {Function[]} */
-  get routeMiddleware () {
-    const route = this.#currentEvent?.route?.()
-    return route ? this.router?.gatherRouteMiddleware(route) : []
-  }
-
-  /** @return {Function[]} */
   get terminateMiddleware () {
-    return this
-      .routeMiddleware
-      ?.filter(v => isConstructor(v) && !!v.prototype.terminate)
-      .concat(this.middleware.terminate ?? [])
+    return this.middleware.terminate ?? []
   }
 
   /**
@@ -102,12 +91,8 @@ export class Kernel {
    * Useful to initialize things at each events.
    */
   async beforeHandle () {
-    for (const provider of this.#providers) {
-      await provider.beforeHandle?.()
-    }
-
+    for (const provider of this.#providers) { await provider.beforeHandle?.() }
     await this.#handler?.beforeHandle?.()
-
     await this._onRegister()
   }
 
@@ -130,16 +115,11 @@ export class Kernel {
    */
   async onTerminate () {
     await this.#handler?.onTerminate?.()
-
-    for (const provider of this.#providers) {
-      await provider.onTerminate?.()
-    }
-
+    for (const provider of this.#providers) { await provider.onTerminate?.() }
     await Pipeline
       .create(this.#container)
       .send(this.#currentEvent, this.#currentResponse)
-      .through(this.terminateMiddleware ?? [])
-      .via('terminate')
+      .through(this.terminateMiddleware)
       .thenReturn()
   }
 
@@ -156,7 +136,7 @@ export class Kernel {
     this.#registerListeners()
     this.#registerMappers()
     this.#registerSubscribers()
-    await this.#registerCommands()
+    this.#registerCommands()
 
     await this.#handler?.register?.()
   }
@@ -174,18 +154,13 @@ export class Kernel {
       throw new TypeError('No IncomingEvent provided.')
     }
 
-    this.#currentEvent = event
     event.clone && this.#container.autoBinding('originalEvent', event.clone())
-    this.#container.autoBinding(IncomingEvent, event, true, ['event', 'request'])
 
-    if (this.#booted) return
+    if (this.#booted) { return }
 
-    if (isFunction(this.#handler?.boot)) {
-      await this.#handler.boot()
-    }
+    if (isFunction(this.#handler?.boot)) { await this.#handler.boot() }
 
     await this.#bootProviders()
-    await this.#handleCommands(event)
 
     this.#booted = true
   }
@@ -213,8 +188,11 @@ export class Kernel {
    * @throws  {TypeError}
    */
   _prepareDestination (event) {
+    this.#currentEvent = event
+    this.#container.autoBinding(IncomingEvent, this.#currentEvent, true, ['event', 'request'])
+
     if (this.router) {
-      return this.router.dispatch(event)
+      return this.router.dispatch(this.#currentEvent)
     }
 
     if (isFunction(this.#handler)) {
@@ -236,6 +214,7 @@ export class Kernel {
   async _prepareResponse (event) {
     if (!this.#currentResponse) return
 
+    this.#container.autoBinding(OutgoingResponse, this.#currentResponse, true, ['response'])
     this.#eventEmitter.emit(Event.PREPARING_RESPONSE, new Event(Event.PREPARING_RESPONSE, this, { event, response: this.#currentResponse }))
     this.#currentResponse = await this.#currentResponse.prepare(event, this.#config)
     this.#eventEmitter.emit(Event.RESPONSE_PREPARED, new Event(Event.RESPONSE_PREPARED, this, { event, response: this.#currentResponse }))
@@ -344,18 +323,14 @@ export class Kernel {
     return this
   }
 
-  async #registerCommands () {
+  #registerCommands () {
     Array
       .from(this.#providers.values())
       .reduce(
         (prev, provider) => prev.concat(provider.commands ?? []),
         this.#config.get('app.commands', [])
       )
-      .forEach((command) => this.#commands.add(this.#container.resolve(command, true)))
-
-    for (const command of this.#commands) {
-      await command.beforeHandle?.()
-    }
+      .forEach((command) => this.#container.resolve(command, true).beforeHandle?.())
 
     return this
   }
@@ -395,12 +370,6 @@ export class Kernel {
   async #bootProviders () {
     for (const provider of this.#providers) {
       await provider.boot?.()
-    }
-  }
-
-  async #handleCommands (event) {
-    for (const command of this.#commands) {
-      await command.handle?.(event)
     }
   }
 }

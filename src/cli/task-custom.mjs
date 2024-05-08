@@ -5,9 +5,9 @@ import { importModule } from '@stone-js/common'
 /**
  * Custom task.
  *
- * @param   {IncomingEvent} event
  * @param   {Container} container
- * @returns {void}
+ * @param   {IncomingEvent} [event]
+ * @returns
  */
 export const customTask = async (container) => {
   if (shouldBuild(container.config)) {

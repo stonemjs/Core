@@ -10,4 +10,4 @@ const stoneOptions = await getStoneOptions()
 /**
  * Execute CLI application.
  */
-await App.createAndRun(stoneOptions)
+App.createAndRun(stoneOptions)

@@ -49,7 +49,7 @@ export function getCache () {
  * Application files's cache memory.
  *
  * @param   {Config} config
- * @returns {void}
+ * @returns
  */
 export function setCache (config) {
   const cache = getCache()
