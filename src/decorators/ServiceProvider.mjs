@@ -9,7 +9,7 @@ import { AbstractProvider } from '../AbstractProvider.mjs'
  * @author Mr. Stone <evensstone@gmail.com>
  *
  * @memberOf Decorators
- * @param  {Object} options - The decorator congiguration options.
+ * @param  {Object} options - The decorator configuration options.
  * @return {Function}
  */
 export const ServiceProvider = (options) => {

@@ -7,7 +7,7 @@ import { isConstructor } from '@stone-js/common'
  * @author Mr. Stone <evensstone@gmail.com>
  *
  * @memberOf Decorators
- * @param  {Object} options - The decorator congiguration options.
+ * @param  {Object} options - The decorator configuration options.
  * @return {Function}
  */
 export const Subscriber = (options = {}) => {

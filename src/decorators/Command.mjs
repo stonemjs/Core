@@ -7,7 +7,12 @@ import { isConstructor } from '@stone-js/common'
  * @author Mr. Stone <evensstone@gmail.com>
  *
  * @memberOf Decorators
- * @param  {Object} options - The decorator congiguration options.
+ * @param  {Object} options - The decorator configuration options.
+ * @param  {string} options.name - The name of the command.
+ * @param  {string|string[]} options.args - List of positional arguments.
+ * @param  {string|string[]} options.alias - Command alias names.
+ * @param  {string} options.desc - Command description.
+ * @param  {Object} options.options - Command options.
  * @return {Function}
  */
 export const Command = (options = {}) => {
