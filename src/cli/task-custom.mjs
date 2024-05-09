@@ -11,11 +11,11 @@ import { buildPath } from '@stone-js/common'
  * @param   {IncomingEvent} [event]
  * @returns
  */
-export const customTask = async (container) => {
+export const customTask = async (container, _event, showHelp = false) => {
   if (shouldBuild(container)) {
-    await buildApp(container, () => startProcess())
+    await buildApp(container, () => startProcess(showHelp))
   } else {
-    startProcess()
+    startProcess(showHelp)
   }
 }
 
@@ -23,8 +23,10 @@ export const customTask = async (container) => {
  * Start Process.
  *
  * @private
+ * @param {boolean} showHelp
  * @returns
  */
-function startProcess () {
-  spawn('node', [buildPath('console.bootstrap.mjs'), ...argv.slice(2)], { stdio: 'inherit' })
+function startProcess (showHelp) {
+  const args = showHelp ? ['--help'] : argv.slice(2)
+  spawn('node', [buildPath('console.bootstrap.mjs'), ...args], { stdio: 'inherit' })
 }

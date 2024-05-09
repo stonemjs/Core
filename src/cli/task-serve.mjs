@@ -1,5 +1,6 @@
 import spawn from 'cross-spawn'
 import { watch } from 'chokidar'
+import { argv } from 'node:process'
 import { shouldBuild } from './utils.mjs'
 import { buildApp } from './task-build.mjs'
 import { basePath, buildPath } from '@stone-js/common'
@@ -62,7 +63,5 @@ function appWatcher (handler) {
  */
 function startProcess (serverProcess) {
   serverProcess && serverProcess.kill()
-  serverProcess = spawn('node', [buildPath('app.bootstrap.mjs')], { stdio: 'inherit' })
-  serverProcess.on('close', () => console.info('Server process terminated.'))
-  return serverProcess
+  return spawn('node', [buildPath('app.bootstrap.mjs'), ...argv.slice(2)], { stdio: 'inherit' })
 }

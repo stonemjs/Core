@@ -260,6 +260,12 @@ export class Kernel {
     return this
   }
 
+  async #bootProviders () {
+    for (const provider of this.#providers) {
+      await provider.boot?.()
+    }
+  }
+
   #registerHandler (handler) {
     this.#handler = isConstructor(handler) ? this.#container.resolve(handler, true) : handler
 
@@ -325,20 +331,6 @@ export class Kernel {
     return this
   }
 
-  #registerCommands () {
-    Array
-      .from(this.#providers.values())
-      .reduce(
-        (prev, provider) => prev.concat(provider.commands ?? []),
-        this.#config.get('app.commands', [])
-      )
-      .forEach((command) => this.#commands.add(this.#container.resolve(command, true)))
-
-    this.#commands.forEach((command) => command.registerCommand?.())
-
-    return this
-  }
-
   #registerAlias () {
     Array
       .from(this.#providers.values())
@@ -371,10 +363,20 @@ export class Kernel {
     return this
   }
 
-  async #bootProviders () {
-    for (const provider of this.#providers) {
-      await provider.boot?.()
-    }
+  #registerCommands () {
+    if (this.#container.make('platformName') !== NODE_CONSOLE_PLATFORM) { return this }
+
+    Array
+      .from(this.#providers.values())
+      .reduce(
+        (prev, provider) => prev.concat(provider.commands ?? []),
+        this.#config.get('app.commands', [])
+      )
+      .forEach((command) => this.#commands.add(this.#container.resolve(command, true)))
+
+    this.#commands.forEach((command) => command.registerCommand?.())
+
+    return this
   }
 
   #isConsoleAndHasCommands () {

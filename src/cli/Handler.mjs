@@ -58,12 +58,15 @@ export class Handler {
    * @returns
    */
   async handle (event) {
-    switch (event.get('task')) {
-      case 'build':
+    switch (true) {
+      case ['build', 'b'].includes(event.get('task')):
         await buildTask(this.#container, event)
         break
-      case 'serve':
+      case ['serve', 's'].includes(event.get('task')):
         await serveTask(this.#container, event)
+        break
+      case ['list', 'ls', 'l'].includes(event.get('task')):
+        await customTask(this.#container, event, true)
         break
       default:
         await customTask(this.#container, event)
@@ -87,6 +90,11 @@ export class Handler {
         command: 'serve',
         aliases: ['s'],
         desc: 'Serve project'
+      })
+      .command({
+        command: 'list',
+        aliases: ['l', 'ls'],
+        desc: 'List all custom commands'
       })
       .help()
       .version(version)
