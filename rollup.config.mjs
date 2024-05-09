@@ -9,13 +9,11 @@ import nodeExternals from 'rollup-plugin-node-externals'
 const inputs = {
   config: 'src/config/*.mjs',
   decorators: 'src/decorators/*.mjs',
-  cli: ['src/cli/App.mjs', 'src/cli/utils.mjs'],
   index: [
     'src/Event.mjs',
     'src/ErrorHandler.mjs',
     'src/StoneFactory.mjs',
-    'src/AbstractCommand.mjs',
-    'src/AbstractProvider.mjs',
+    'src/CoreServiceProvider.mjs',
   ],
 }
 
@@ -23,14 +21,6 @@ export default Object.entries(inputs).map(([name, input]) => ({
 	input,
 	output: [
     { format: 'es', file: `dist/${name}.js` }
-  ],
-  external: [
-    'glob',
-    'chokidar',
-    /^@?rollup/,
-    'cross-spawn',
-    '@babel/core',
-    'fs-extra/esm',
   ],
   plugins: [
     json(),

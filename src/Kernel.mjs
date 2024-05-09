@@ -4,7 +4,6 @@ import { Pipeline } from '@stone-js/pipeline'
 import { EventEmitter } from './EventEmitter.mjs'
 import { ErrorHandler } from './ErrorHandler.mjs'
 import { Container } from '@stone-js/service-container'
-import { NODE_CONSOLE_PLATFORM } from '@stone-js/adapters'
 import { IncomingEvent, RuntimeError, isConstructor, isFunction, OutgoingResponse } from '@stone-js/common'
 
 /**
@@ -16,7 +15,6 @@ export class Kernel {
   #config
   #booted
   #handler
-  #commands
   #container
   #providers
   #eventEmitter
@@ -43,7 +41,6 @@ export class Kernel {
    */
   constructor (handler = null, options = {}) {
     this.#booted = false
-    this.#commands = new Set()
     this.#providers = new Set()
     this.#registeredProviders = new Set()
 
@@ -133,14 +130,6 @@ export class Kernel {
    */
   async _onRegister () {
     await this.#registerProviders()
-
-    this.#registerServices()
-    this.#registerAlias()
-    this.#registerListeners()
-    this.#registerMappers()
-    this.#registerSubscribers()
-    this.#registerCommands()
-
     await this.#handler?.register?.()
   }
 
@@ -156,9 +145,10 @@ export class Kernel {
     if (!event) { throw new TypeError('No IncomingEvent provided.') }
     if (event.clone) { this.#container.autoBinding('originalEvent', event.clone()) }
     if (this.#booted) { return }
-    if (isFunction(this.#handler?.boot)) { await this.#handler.boot() }
 
     await this.#bootProviders()
+
+    if (isFunction(this.#handler?.boot)) { await this.#handler.boot() }
 
     this.#booted = true
   }
@@ -188,10 +178,6 @@ export class Kernel {
   async _prepareDestination (event) {
     this.#currentEvent = event
     this.#container.autoBinding(IncomingEvent, this.#currentEvent, true, ['event', 'request'])
-
-    if (this.#isConsoleAndHasCommands()) {
-      return this.#dispathToCommands(event)
-    }
 
     if (this.router) {
       return this.router.dispatch(this.#currentEvent)
@@ -260,21 +246,13 @@ export class Kernel {
     return this
   }
 
-  async #bootProviders () {
-    for (const provider of this.#providers) {
-      await provider.boot?.()
-    }
-  }
-
   #registerHandler (handler) {
     this.#handler = isConstructor(handler) ? this.#container.resolve(handler, true) : handler
-
     return this
   }
 
   #registerErrorHandler () {
     this.#container.autoBinding(ErrorHandler, ErrorHandler, true, 'errorHandler')
-
     return this
   }
 
@@ -298,95 +276,9 @@ export class Kernel {
     }
   }
 
-  #registerServices () {
-    this.#container.register(this.#config.get('app.services', []))
-    return this
-  }
-
-  #registerListeners () {
-    Array
-      .from(this.#providers.values())
-      .reduce(
-        (prev, provider) => prev.concat(Object.entries(provider.listeners ?? {})),
-        Object.entries(this.#config.get('app.listeners', {}))
-      )
-      .forEach(([event, listeners = []]) => {
-        listeners.forEach((listener) => {
-          this.#eventEmitter.on(event, (e) => this.#container.resolve(listener, true).handle(e))
-        })
-      })
-
-    return this
-  }
-
-  #registerSubscribers () {
-    Array
-      .from(this.#providers.values())
-      .reduce(
-        (prev, provider) => prev.concat(provider.subscribers ?? []),
-        this.#config.get('app.subscribers', [])
-      )
-      .forEach((subscriber) => this.#container.resolve(subscriber, true).subscribe(this.#eventEmitter))
-
-    return this
-  }
-
-  #registerAlias () {
-    Array
-      .from(this.#providers.values())
-      .reduce(
-        (prev, provider) => prev.concat(Object.entries(provider.aliases ?? {})),
-        Object.entries(this.#config.get('app.aliases', {}))
-      )
-      .forEach(([Class, alias]) => isConstructor(Class) && this.#container.alias(Class, alias))
-
-    return this
-  }
-
-  #registerMappers () {
-    if (this.#config.get('app.mapper.input.type')) {
-      const Mapper = this.#config.get('app.mapper.input.type')
-      const resolver = this.#config.get('app.mapper.input.resolver')
-      const middleware = this.#config.get('app.mapper.input.middleware', [])
-
-      this.#container.singleton('inputMapper', (container) => Mapper.create(container, middleware, resolver))
+  async #bootProviders () {
+    for (const provider of this.#providers) {
+      await provider.boot?.()
     }
-
-    if (this.#config.get('app.mapper.output.type')) {
-      const Mapper = this.#config.get('app.mapper.output.type')
-      const resolver = this.#config.get('app.mapper.output.resolver')
-      const middleware = this.#config.get('app.mapper.output.middleware', [])
-
-      this.#container.singleton('outputMapper', (container) => Mapper.create(container, middleware, resolver))
-    }
-
-    return this
-  }
-
-  #registerCommands () {
-    if (this.#container.make('platformName') !== NODE_CONSOLE_PLATFORM) { return this }
-
-    Array
-      .from(this.#providers.values())
-      .reduce(
-        (prev, provider) => prev.concat(provider.commands ?? []),
-        this.#config.get('app.commands', [])
-      )
-      .forEach((command) => this.#commands.add(this.#container.resolve(command, true)))
-
-    this.#commands.forEach((command) => command.registerCommand?.())
-
-    return this
-  }
-
-  #isConsoleAndHasCommands () {
-    return this.#container.make('platformName') === NODE_CONSOLE_PLATFORM && this.#commands.size > 0
-  }
-
-  #dispathToCommands (event) {
-    for (const command of this.#commands) {
-      if (command.match(event)) { return command.handle(event) }
-    }
-    this.#container.builder.showHelp()
   }
 }
