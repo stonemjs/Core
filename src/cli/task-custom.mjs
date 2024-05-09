@@ -1,6 +1,8 @@
+import spawn from 'cross-spawn'
+import { argv } from 'node:process'
 import { shouldBuild } from './utils.mjs'
 import { buildApp } from './task-build.mjs'
-import { importModule } from '@stone-js/common'
+import { buildPath } from '@stone-js/common'
 
 /**
  * Custom task.
@@ -10,9 +12,19 @@ import { importModule } from '@stone-js/common'
  * @returns
  */
 export const customTask = async (container) => {
-  if (shouldBuild(container.config)) {
-    await buildApp(container, () => importModule('./.stone/console.bootstrap.mjs'))
+  if (shouldBuild(container)) {
+    await buildApp(container, () => startProcess())
   } else {
-    await importModule('./.stone/console.bootstrap.mjs')
+    startProcess()
   }
+}
+
+/**
+ * Start Process.
+ *
+ * @private
+ * @returns
+ */
+function startProcess () {
+  spawn('node', [buildPath('console.bootstrap.mjs'), ...argv.slice(2)], { stdio: 'inherit' })
 }

@@ -7,18 +7,18 @@ import { makeBootstrapFile, makeConsoleBootstrapFile } from './stubs.mjs'
 
 /** @returns {pipeable[]} */
 const buildPipes = [
-  pipeable((container) => container.output.info('Building...')),
+  pipeable(() => console.info('Building...')),
   pipeable(() => emptyDirSync(buildPath())),
   pipeable((container) => rollupBuild(container.config)),
   pipeable((container) => setCache(container.config)),
   pipeable(() => makeBootstrapFile()),
   pipeable(() => makeConsoleBootstrapFile()),
-  pipeable((container) => container.output.info('Build finished'))
+  pipeable(() => console.info('Build finished'))
 ]
 
 /** @returns {pipeable[]} */
 const bundlePipes = [
-  pipeable((container) => container.output.info('Bundling...')),
+  pipeable(() => console.info('Bundling...')),
   pipeable(() => emptyDirSync(distPath())),
   pipeable(() => rollupBundle())
 ]

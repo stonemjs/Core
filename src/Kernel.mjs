@@ -4,6 +4,7 @@ import { Pipeline } from '@stone-js/pipeline'
 import { EventEmitter } from './EventEmitter.mjs'
 import { ErrorHandler } from './ErrorHandler.mjs'
 import { Container } from '@stone-js/service-container'
+import { NODE_CONSOLE_PLATFORM } from '@stone-js/adapters'
 import { IncomingEvent, RuntimeError, isConstructor, isFunction, OutgoingResponse } from '@stone-js/common'
 
 /**
@@ -15,6 +16,7 @@ export class Kernel {
   #config
   #booted
   #handler
+  #commands
   #container
   #providers
   #eventEmitter
@@ -41,6 +43,7 @@ export class Kernel {
    */
   constructor (handler = null, options = {}) {
     this.#booted = false
+    this.#commands = new Set()
     this.#providers = new Set()
     this.#registeredProviders = new Set()
 
@@ -150,14 +153,9 @@ export class Kernel {
    * @throws {TypeError}
    */
   async _onBootstrap (event) {
-    if (!event) {
-      throw new TypeError('No IncomingEvent provided.')
-    }
-
-    event.clone && this.#container.autoBinding('originalEvent', event.clone())
-
+    if (!event) { throw new TypeError('No IncomingEvent provided.') }
+    if (event.clone) { this.#container.autoBinding('originalEvent', event.clone()) }
     if (this.#booted) { return }
-
     if (isFunction(this.#handler?.boot)) { await this.#handler.boot() }
 
     await this.#bootProviders()
@@ -187,9 +185,13 @@ export class Kernel {
    * @returns {*}
    * @throws  {TypeError}
    */
-  _prepareDestination (event) {
+  async _prepareDestination (event) {
     this.#currentEvent = event
     this.#container.autoBinding(IncomingEvent, this.#currentEvent, true, ['event', 'request'])
+
+    if (this.#isConsoleAndHasCommands()) {
+      return this.#dispathToCommands(event)
+    }
 
     if (this.router) {
       return this.router.dispatch(this.#currentEvent)
@@ -330,7 +332,9 @@ export class Kernel {
         (prev, provider) => prev.concat(provider.commands ?? []),
         this.#config.get('app.commands', [])
       )
-      .forEach((command) => this.#container.resolve(command, true).beforeHandle?.())
+      .forEach((command) => this.#commands.add(this.#container.resolve(command, true)))
+
+    this.#commands.forEach((command) => command.registerCommand?.())
 
     return this
   }
@@ -371,5 +375,16 @@ export class Kernel {
     for (const provider of this.#providers) {
       await provider.boot?.()
     }
+  }
+
+  #isConsoleAndHasCommands () {
+    return this.#container.make('platformName') === NODE_CONSOLE_PLATFORM && this.#commands.size > 0
+  }
+
+  #dispathToCommands (event) {
+    for (const command of this.#commands) {
+      if (command.match(event)) { return command.handle(event) }
+    }
+    this.#container.builder.showHelp()
   }
 }

@@ -17,10 +17,12 @@ export class AbstractProvider {
     this.#container = container
   }
 
+  /** @return {Container} */
   get container () {
     return this.#container
   }
 
+  /** @return {Config} */
   get config () {
     return this.#container.config
   }

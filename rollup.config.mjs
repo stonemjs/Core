@@ -10,7 +10,13 @@ const inputs = {
   config: 'src/config/*.mjs',
   decorators: 'src/decorators/*.mjs',
   cli: ['src/cli/App.mjs', 'src/cli/utils.mjs'],
-  index: ['src/StoneFactory.mjs', 'src/Event.mjs', 'src/AbstractProvider.mjs', 'src/ErrorHandler.mjs'],
+  index: [
+    'src/Event.mjs',
+    'src/ErrorHandler.mjs',
+    'src/StoneFactory.mjs',
+    'src/AbstractCommand.mjs',
+    'src/AbstractProvider.mjs',
+  ],
 }
 
 export default Object.entries(inputs).map(([name, input]) => ({
@@ -18,7 +24,14 @@ export default Object.entries(inputs).map(([name, input]) => ({
 	output: [
     { format: 'es', file: `dist/${name}.js` }
   ],
-  external: ['@babel/core', 'fs-extra/esm', /^@?rollup/, 'glob', 'chokidar'],
+  external: [
+    'glob',
+    'chokidar',
+    /^@?rollup/,
+    'cross-spawn',
+    '@babel/core',
+    'fs-extra/esm',
+  ],
   plugins: [
     json(),
     multi(),

@@ -68,13 +68,13 @@ export function setCache (config) {
  * Will return `true` if anything has changed
  * from the last build.
  *
- * @param   {Config} config
+ * @param   {Container} container
  * @returns {boolean}
  */
-export function shouldBuild (config) {
+export function shouldBuild (container) {
   const cache = getCache()
 
-  return getApplicationFiles(config)
+  return getApplicationFiles(container.config)
     .reduce((prev, [_, files]) => prev.concat(files), [])
     .reduce((prev, filePath, _, files) => {
       if (prev) return prev

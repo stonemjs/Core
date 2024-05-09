@@ -20,6 +20,7 @@ export const Command = (options = {}) => {
       command: options
     }
 
+    target.prototype.$$metadata$$ = options
     target.$$metadata$$ = deepmerge(target.$$metadata$$ ?? {}, metadata)
 
     return target

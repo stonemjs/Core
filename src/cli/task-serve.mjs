@@ -1,6 +1,6 @@
+import spawn from 'cross-spawn'
 import { watch } from 'chokidar'
 import { shouldBuild } from './utils.mjs'
-import { spawn } from 'node:child_process'
 import { buildApp } from './task-build.mjs'
 import { basePath, buildPath } from '@stone-js/common'
 
@@ -14,12 +14,14 @@ import { basePath, buildPath } from '@stone-js/common'
 export const serveTask = async (container) => {
   let serverProcess
 
-  if (shouldBuild(container.config)) {
-    await buildApp(container, () => { serverProcess = startProcess(container, serverProcess) })
+  if (shouldBuild(container)) {
+    await buildApp(container, () => { serverProcess = startProcess(serverProcess) })
+  } else {
+    serverProcess = startProcess(serverProcess)
   }
 
-  appWatcher(container, async () => {
-    await buildApp(container, () => { serverProcess = startProcess(container, serverProcess) })
+  appWatcher(async () => {
+    await buildApp(container, () => { serverProcess = startProcess(serverProcess) })
   })
 }
 
@@ -27,11 +29,10 @@ export const serveTask = async (container) => {
  * App watcher.
  *
  * @private
- * @param   {Container} container
  * @param   {Function} handler
  * @returns
  */
-function appWatcher (container, handler) {
+function appWatcher (handler) {
   const watcher = watch('.', {
     ignored: ['node_modules/**', 'dist/**', '.stone/**'],
     cwd: basePath(),
@@ -42,12 +43,12 @@ function appWatcher (container, handler) {
   })
 
   watcher.on('change', async (path) => {
-    container.output.info(`File ${path} changed`)
+    console.info(`File ${path} changed`)
     await handler()
   })
 
   watcher.on('add', async (path) => {
-    container.output.info(`File ${path} has been added`)
+    console.info(`File ${path} has been added`)
     await handler()
   })
 }
@@ -56,13 +57,12 @@ function appWatcher (container, handler) {
  * Start Process.
  *
  * @private
- * @param   {Container} container
  * @param   {Object} serverProcess
  * @returns {Object}
  */
-function startProcess (container, serverProcess) {
+function startProcess (serverProcess) {
   serverProcess && serverProcess.kill()
   serverProcess = spawn('node', [buildPath('app.bootstrap.mjs')], { stdio: 'inherit' })
-  serverProcess.on('close', () => container.output.info('Server process terminated.'))
+  serverProcess.on('close', () => console.info('Server process terminated.'))
   return serverProcess
 }
