@@ -64,25 +64,22 @@ export class StoneFactory {
   /**
    * Run handler.
    *
-   * @param   {string} [alias=null] - Adapter alias name.
    * @returns {*}
    * @throws  {RuntimeError}
    */
-  async run (alias = null) {
-    return this.#makeAdapter(alias).hooks(this.#hooks).run()
+  async run () {
+    return this.#makeAdapter().hooks(this.#hooks).run()
   }
 
   /**
    * Make current adapter.
    * Select the current adapter and create an instance.
    *
-   * @param   {string} [alias=null] - Adapter alias name.
    * @returns {Adapter}
    * @throws  {RuntimeError}
    */
-  #makeAdapter (alias) {
-    const aliases = [alias, this.#options.app.adapter.current].filter(v => !!v)
-    const current = this.#options.adapters.find((v) => aliases.includes(v.app.adapter.alias) || v.app.adapter.default)
+  #makeAdapter () {
+    const current = this.#findCurrentAdapter()
     const Adapter = current?.app.adapter.type
     const handler = this.#options.app.handler
 
@@ -93,5 +90,21 @@ export class StoneFactory {
     const options = deepmerge(this.#options, current)
 
     return Adapter.create(() => Kernel.create(handler, options), options.app.adapter)
+  }
+
+  /**
+   * Find current adapter.
+   *
+   * @returns {Adapter}
+   */
+  #findCurrentAdapter () {
+    return this
+      .#options
+      .adapters
+      .find((v) => this.#options.app.adapter.current === v.app.adapter.alias) ??
+      this
+        .#options
+        .adapters
+        .find((v) => v.app.adapter.default)
   }
 }
