@@ -1,5 +1,5 @@
 import deepmerge from 'deepmerge'
-import { isConstructor } from '@stone-js/common'
+import { classLevelDecoratorChecker } from '@stone-js/common'
 
 /**
  * ServiceProvider decorator to mark a class as a ServiceProvider
@@ -13,9 +13,7 @@ import { isConstructor } from '@stone-js/common'
  */
 export const ServiceProvider = (options = {}) => {
   return (target) => {
-    if (!isConstructor(target)) {
-      throw new TypeError('This decorator can only be applied at class level.')
-    }
+    classLevelDecoratorChecker(target)
 
     const metadata = {
       serviceProvider: { ...options }

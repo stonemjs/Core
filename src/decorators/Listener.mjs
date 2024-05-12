@@ -1,5 +1,5 @@
 import deepmerge from 'deepmerge'
-import { isConstructor } from '@stone-js/common'
+import { classLevelDecoratorChecker } from '@stone-js/common'
 
 /**
  * Listener Decorator: Useful for customizing classes as listener.
@@ -13,9 +13,7 @@ import { isConstructor } from '@stone-js/common'
  */
 export const Listener = (options) => {
   return (target) => {
-    if (!isConstructor(target)) {
-      throw new TypeError('This decorator can only be applied at class level.')
-    }
+    classLevelDecoratorChecker(target)
 
     const metadata = {
       listener: options
