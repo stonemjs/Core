@@ -1,6 +1,6 @@
 import deepmerge from 'deepmerge'
 import { Kernel } from './Kernel.mjs'
-import { RuntimeError, isConstructor } from '@stone-js/common'
+import { isConstructor } from '@stone-js/common'
 
 /**
  * Class representing StoneFactory.
@@ -68,7 +68,7 @@ export class StoneFactory {
    * @throws  {RuntimeError}
    */
   async run () {
-    return this.#makeAdapter().hooks(this.#hooks).run()
+    return this.#makeAdapter()?.hooks(this.#hooks).run()
   }
 
   /**
@@ -80,16 +80,16 @@ export class StoneFactory {
    */
   #makeAdapter () {
     const current = this.#findCurrentAdapter()
-    const Adapter = current?.app.adapter.type
-    const handler = this.#options.app.handler
+    const Adapter = current?.app?.adapter?.type
 
-    if (!isConstructor(Adapter)) {
-      throw new RuntimeError('No adapters provided.')
+    if (isConstructor(Adapter)) {
+      const handler = this.#options.app.handler
+      const options = deepmerge(this.#options, current)
+      if (handler.onInit) { this.hook('onInit', () => handler.onInit()) }
+      return Adapter.create(() => Kernel.create(handler, options), options.app.adapter)
     }
 
-    const options = deepmerge(this.#options, current)
-
-    return Adapter.create(() => Kernel.create(handler, options), options.app.adapter)
+    console.error('No adapters provided. Stone.js needs at least one default adapter to run.')
   }
 
   /**
@@ -101,10 +101,10 @@ export class StoneFactory {
     return this
       .#options
       .adapters
-      .find((v) => this.#options.app.adapter.current === v.app.adapter.alias) ??
+      ?.find((v) => this.#options.app.adapter.current === v.app.adapter.alias) ??
       this
         .#options
         .adapters
-        .find((v) => v.app.adapter.default)
+        ?.find((v) => v.app.adapter.default)
   }
 }

@@ -1,5 +1,17 @@
-export const app = {
-  // App namespace
+import { CoreServiceProvider } from '@stone-js/core'
+
+/**
+ * Stone main options.
+ *
+ * @returns {Object}
+*/
+export const appOptions = {
+  // Adapters namespace.
+  // Here you can define adapters settings.
+  adapters: [],
+
+  // App namespace.
+  // Here you can define app settings.
   app: {
 
     // This value is the name of your application.
@@ -32,21 +44,7 @@ export const app = {
 
       // Here you can set the current adapter alias.
       // This value will be used to determine the adapter at runtime.
-      current: null,
-
-      // Dom event to listen to.
-      // Only in browser
-      events: [],
-
-      // Use this to get the target selector where the eventlistener will be attached.
-      // Only in browser
-      targetSelector: [],
-
-      // Base url to run the app.
-      url: 'http://localhost:8080',
-
-      // Node server configs
-      server: {}
+      current: null
     },
 
     // Here you can define global app level setting for all adapters.
@@ -82,10 +80,6 @@ export const app = {
       withoutDuplicates: false
     },
 
-    // Here you can register your application routes.
-    // This array of services will be automatically registered when this application is started.
-    routes: [],
-
     // Here you can register services for all adapters.
     // This array of services will be automatically registered when this application is started.
     services: [],
@@ -100,7 +94,9 @@ export const app = {
 
     // Here you can register providers for all adapters.
     // The service providers listed here will be automatically loaded at each request to your application.
-    providers: [],
+    providers: [
+      CoreServiceProvider
+    ],
 
     // Here you can register aliases for all adapters.
     // This array of class aliases will be registered when the application is started.

@@ -1,5 +1,6 @@
 import deepmerge from 'deepmerge'
-import { isConstructor } from '@stone-js/common'
+import { appOptions } from '@stone-js/core/config'
+import { classLevelDecoratorChecker } from '@stone-js/common'
 
 /**
  * Decorators, usefull for decorating classes.
@@ -17,16 +18,20 @@ import { isConstructor } from '@stone-js/common'
  * @memberOf Decorators
  * @param  {Object} options - The decorator configuration options.
  * @param  {string} options.name - Application name.
+ * @param  {string} options.env - Application env.
+ * @param  {string} options.debug - Application debug.
+ * @param  {string} options.timezone - Define the timezone.
+ * @param  {string} options.locale - Application locale.
+ * @param  {string} options.fallback_locale - Application fallback_locale.
+ * @param  {string} options.adapter.current - Define the current adapter.
  * @return {Function}
  */
 export const App = (options = {}) => {
   return (target) => {
-    if (!isConstructor(target)) {
-      throw new TypeError('This decorator can only be applied at class level.')
-    }
+    classLevelDecoratorChecker(target)
 
     const metadata = {
-      mainHandler: options
+      mainHandler: deepmerge(appOptions, { app: { ...options } })
     }
 
     target.$$metadata$$ = deepmerge(target.$$metadata$$ ?? {}, metadata)

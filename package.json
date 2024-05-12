@@ -54,13 +54,11 @@
     "test:html": "npm run test:cvg -- --coverageReporters=html text",
     "test:lcov": "npm run test:cvg -- --coverageReporters=lcov text"
   },
-  "peerDependencies": {
+  "dependencies": {
     "@stone-js/common": "^0.0.1",
     "@stone-js/config": "^0.0.1",
     "@stone-js/pipeline": "^0.0.1",
-    "@stone-js/service-container": "^0.0.1"
-  },
-  "dependencies": {
+    "@stone-js/service-container": "^0.0.1",
     "deepmerge": "^4.3.1"
   },
   "devDependencies": {
@@ -77,10 +75,18 @@
     "jsdoc": "^4.0.2",
     "rimraf": "^5.0.5",
     "rollup": "^4.1.5",
+    "rollup-plugin-copy": "^3.5.0",
     "rollup-plugin-node-externals": "^6.1.2",
     "rollup-plugin-polyfill-node": "^0.13.0",
     "standard": "^17.1.0",
     "typescript": "^5.2.2"
+  },
+  "stone": {
+    "config": {
+      "make": {
+        "app": "dist/options.mjs"
+      }
+    }
   },
   "standard": {
     "parser": "@babel/eslint-parser",
