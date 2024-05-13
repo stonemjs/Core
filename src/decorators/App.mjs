@@ -31,7 +31,8 @@ export const App = (options = {}) => {
     classLevelDecoratorChecker(target)
 
     const metadata = {
-      mainHandler: deepmerge(appOptions, { app: { ...options } })
+      provider: {},
+      mainHandler: deepmerge(appOptions, { app: { ...options, handler: target } })
     }
 
     target.$$metadata$$ = deepmerge(target.$$metadata$$ ?? {}, metadata)

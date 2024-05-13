@@ -40,19 +40,6 @@ export const AdapterPipe = (passable, next) => {
 }
 
 /**
- * Handle Handler decorator.
- *
- * @param   {Passable} passable - Input data to transform via middleware.
- * @param   {Function} next - Pass to next middleware.
- * @returns {Passable}
- */
-export const HandlerPipe = (passable, next) => {
-  const module = passable.app.find(module => module.$$metadata$$?.mainHandler)
-  passable.options.app.handler = module ?? passable.options.app.handler
-  return next(passable)
-}
-
-/**
  * Handle Provider decorator.
  *
  * @param   {Passable} passable - Input data to transform via middleware.
@@ -125,7 +112,6 @@ export const MiddlewarePipe = (passable, next) => {
 export const defaultPipes = [
   MainConfigPipe,
   AdapterPipe,
-  HandlerPipe,
   ProviderPipe,
   ServicePipe,
   ListenerPipe,

@@ -79,17 +79,27 @@ export class StoneFactory {
    * @throws  {RuntimeError}
    */
   #makeAdapter () {
+    // Get current adapter options
+    // or the default one if there is no current.
     const current = this.#findCurrentAdapter()
+
+    // Get the Adapter class.
     const Adapter = current?.app?.adapter?.type
 
     if (isConstructor(Adapter)) {
-      const handler = this.#options.app.handler
+      // Call onInit once for all providers.
+      this.#onInit()
+
+      // Merge current adapter options with global
+      // so adapter options can override globals.
       const options = deepmerge(this.#options, current)
-      if (handler.onInit) { this.hook('onInit', () => handler.onInit()) }
-      return Adapter.create(() => Kernel.create(handler, options), options.app.adapter)
+
+      // Create the adapter with a kernel factory
+      // So adapter can create a new kernel instance a each request
+      return Adapter.create(() => Kernel.create(options), options.app.adapter)
     }
 
-    console.error('No adapters provided. Stone.js needs at least one default adapter to run.')
+    console.error('No adapters provided. Stone.js needs at least one adapter to run.')
   }
 
   /**
@@ -106,5 +116,21 @@ export class StoneFactory {
         .#options
         .adapters
         ?.find((v) => v.app.adapter.default)
+  }
+
+  /**
+   * Call onInit hook on all service providers.
+   * OnInit is called once and just after the application runs.
+   * Usefull to setup once.
+   *
+   * @returns
+   */
+  #onInit () {
+    this
+      .#options
+      .app
+      ?.providers
+      ?.filter(provider => provider.onInit)
+      .forEach(provider => this.hook('onInit', () => provider.onInit()))
   }
 }

@@ -4,7 +4,7 @@ import { Pipeline } from '@stone-js/pipeline'
 import { EventEmitter } from './EventEmitter.mjs'
 import { ErrorHandler } from './ErrorHandler.mjs'
 import { Container } from '@stone-js/service-container'
-import { IncomingEvent, RuntimeError, isConstructor, isFunction, OutgoingResponse } from '@stone-js/common'
+import { IncomingEvent, RuntimeError, isFunction, OutgoingResponse } from '@stone-js/common'
 
 /**
  * Class representing a Kernel.
@@ -14,7 +14,6 @@ import { IncomingEvent, RuntimeError, isConstructor, isFunction, OutgoingRespons
 export class Kernel {
   #config
   #booted
-  #handler
   #container
   #providers
   #eventEmitter
@@ -25,21 +24,19 @@ export class Kernel {
   /**
    * Create a Kernel.
    *
-   * @param   {Function} [handler=null] - User-defined application handler.
-   * @param   {runnerOptions} [options={}] - AppRunner configuration options.
+   * @param   {Object} [options={}] - App Global configuration options.
    * @returns {Kernel}
    */
-  static create (handler = null, options = {}) {
-    return new this(handler, options)
+  static create (options = {}) {
+    return new this(options)
   }
 
   /**
    * Create a Kernel.
    *
-   * @param {Function} [handler=null] - User-defined application handler.
-   * @param {runnerOptions} [options={}] - AppRunner configuration options.
+   * @param {Object} [options={}] - App Global configuration options.
    */
-  constructor (handler = null, options = {}) {
+  constructor (options = {}) {
     this.#booted = false
     this.#providers = new Set()
     this.#registeredProviders = new Set()
@@ -48,7 +45,6 @@ export class Kernel {
       .#registerBaseBindings(options)
       .#registerErrorHandler()
       .#makeProviders()
-      .#registerHandler(handler)
   }
 
   /** @return {Container} */
@@ -87,12 +83,25 @@ export class Kernel {
   }
 
   /**
+   * Make and return the App handler.
+   * App handler is used to handle event when no router is provided.
+   * App handler must be manually registered as provider in explicit configuration context.
+   * But it is automatically registered as provider in implicit configuration context.
+   *
+   * @return {Function}
+   */
+  get #handler () {
+    return this.#config.has('app.handler')
+      ? this.#container.resolve(this.#config.get('app.handler'), true)
+      : null
+  }
+
+  /**
    * Hook that runs at each events and before everything.
    * Useful to initialize things at each events.
    */
   async beforeHandle () {
     for (const provider of this.#providers) { await provider.beforeHandle?.() }
-    await this.#handler?.beforeHandle?.()
     await this._onRegister()
   }
 
@@ -114,7 +123,6 @@ export class Kernel {
    * Invoke kernel, router and current route terminate middlewares.
    */
   async onTerminate () {
-    await this.#handler?.onTerminate?.()
     for (const provider of this.#providers) { await provider.onTerminate?.() }
     await Pipeline
       .create(this.#container)
@@ -130,7 +138,6 @@ export class Kernel {
    */
   async _onRegister () {
     await this.#registerProviders()
-    await this.#handler?.register?.()
   }
 
   /**
@@ -147,8 +154,6 @@ export class Kernel {
     if (this.#booted) { return }
 
     await this.#bootProviders()
-
-    if (isFunction(this.#handler?.boot)) { await this.#handler.boot() }
 
     this.#booted = true
   }
@@ -183,13 +188,11 @@ export class Kernel {
       return this.router.dispatch(this.#currentEvent)
     }
 
-    if (isFunction(this.#handler)) {
-      return this.#handler(this.#currentEvent)
-    } else if (isFunction(this.#handler?.handle)) {
+    if (isFunction(this.#handler?.handle)) {
       return this.#handler.handle(this.#currentEvent)
     }
 
-    throw new TypeError('No router or correct handler has been provided.')
+    throw new TypeError('No router nor handler has been provided.')
   }
 
   /**
@@ -213,7 +216,6 @@ export class Kernel {
       .through(this.responseMiddleware)
       .then((_, response) => response)
 
-    this.#currentResponse.render && await this.#currentResponse.render(event) // Only for frontend rendering
     this.#eventEmitter.emit(Event.EVENT_HANDLED, this, { event, response: this.#currentResponse })
 
     return this.#currentResponse
@@ -246,11 +248,6 @@ export class Kernel {
     return this
   }
 
-  #registerHandler (handler) {
-    this.#handler = isConstructor(handler) ? this.#container.resolve(handler, true) : handler
-    return this
-  }
-
   #registerErrorHandler () {
     this.#container.autoBinding(ErrorHandler, ErrorHandler, true, 'errorHandler')
     return this
@@ -258,8 +255,14 @@ export class Kernel {
 
   async #registerProviders () {
     for (const provider of this.#providers) {
+      // Skip register for app handler if not present.
+      // Register method is mandatory for providers except the app handler.
+      if (this.#handler === provider && !provider.register) {
+        continue
+      }
+
       if (!provider.register) {
-        throw new RuntimeError(`This provider ${provider.toString()} must contain a register method`)
+        throw new RuntimeError(`This provider ${provider.constructor.name} must contain a register method`)
       }
 
       if (this.#registeredProviders.has(provider.constructor.name)) {
