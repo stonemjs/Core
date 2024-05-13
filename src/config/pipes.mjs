@@ -79,19 +79,6 @@ export const ServicePipe = (passable, next) => {
 }
 
 /**
- * Handle Controller decorator.
- *
- * @param   {Passable} passable - Input data to transform via middleware.
- * @param   {Function} next - Pass to next middleware.
- * @returns {Passable}
- */
-export const ControllerPipe = (passable, next) => {
-  const modules = passable.app.filter(module => module.$$metadata$$?.controller)
-  passable.options.app.routes = modules.concat(passable.options.app.routes)
-  return next(passable)
-}
-
-/**
  * Handle Listener decorator.
  *
  * @param   {Passable} passable - Input data to transform via middleware.
