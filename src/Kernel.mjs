@@ -205,6 +205,10 @@ export class Kernel {
   async _prepareResponse (event) {
     if (!this.#currentResponse) return
 
+    if (!(this.#currentResponse instanceof OutgoingResponse)) {
+      throw new TypeError('Return response must be an instance of `OutgoingResponse` or a subclass of it.')
+    }
+
     this.#container.autoBinding(OutgoingResponse, this.#currentResponse, true, ['response'])
     this.#eventEmitter.emit(Event.PREPARING_RESPONSE, new Event(Event.PREPARING_RESPONSE, this, { event, response: this.#currentResponse }))
     this.#currentResponse = await this.#currentResponse.prepare(event, this.#config)
