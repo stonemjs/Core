@@ -13,7 +13,6 @@ import { classLevelDecoratorChecker } from '@stone-js/common'
  * Service options.
  *
  * @typedef  {Object} serviceOptions
- * @property {string} name
  * @property {boolean} singleton
  * @property {(string|string[])} alias
  */

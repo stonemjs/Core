@@ -8,7 +8,6 @@ import { classLevelDecoratorChecker } from '@stone-js/common'
  *
  * @memberOf Decorators
  * @param  {Object} options
- * @param  {string} options.name - Middleware name.
  * @param  {string} options.platform - Platform name.
  * @param  {boolean} options.singleton - Register as singleton in container.
  * @param  {(string|string[])} options.alias - Alias name and must be unique all over the app.
