@@ -1,92 +1,83 @@
+import deepmerge from 'deepmerge'
+import { defaultPipes } from './pipes.mjs'
 import { Pipeline } from '@stone-js/pipeline'
 
 /**
  * Class representing a ConfigBuilder.
  * Constructing and configuring the dynamic
- * Complex strucred options for StoneFactory.
+ * Complex structured options for StoneFactory.
  *
  * @author Mr. Stone <evensstone@gmail.com>
  */
 export class ConfigBuilder {
-  #pipes
-  #passable
-  #passableResolver
-  #destinationResolver
+  #options
 
   /**
-   * Create an ConfigBuilder.
+   * Create a ConfigBuilder.
    *
-   * @param   {Object} passable
-   * @param   {Array}  pipes
+   * @param   {Object} options
    * @returns {ConfigBuilder}
    */
-  static create (passable, pipes) {
-    return new this(passable, pipes)
+  static create (options) {
+    return new this(options)
   }
 
   /**
-   * Create an ConfigBuilder.
+   * Create a ConfigBuilder.
    *
-   * @param {Object} passable
-   * @param {Array}  pipes
+   * @param {Object} options
    */
-  constructor (passable, pipes) {
-    this.#pipes = pipes
-    this.#passable = passable
-  }
-
-  /**
-   * Set passable resolver.
-   *
-   * @param   {Function} resolver
-   * @returns {this}
-   */
-  setPassableResolver (resolver) {
-    this.#passableResolver = resolver
-    return this
-  }
-
-  /**
-   * Set destination resolver.
-   *
-   * @param   {Function} resolver
-   * @returns {this}
-   */
-  setDestinationResolver (resolver) {
-    this.#destinationResolver = resolver
-    return this
+  constructor (options) {
+    this.#options = options
   }
 
   /**
    * Build config
    *
+   * @param   {Object} modules
+   * @param   {Object} modules.app
+   * @param   {Object} modules.options
+   * @param   {Object} modules.commands
    * @returns {Object}
    */
-  build () {
+  async build (modules) {
+    const passable = {}
+
+    // Determine if default pipes must be skipped or not.
+    const pipes = this.#options.autoload?.skipDefaultPipes
+      ? (this.#options.autoload?.pipes ?? [])
+      : defaultPipes.concat(this.#options.autoload?.pipes ?? [])
+
+    // We group the imported modules by names.
+    // We Convert their values from object to array.
+    for (const [name, value] of Object.entries(modules)) {
+      passable[name] = Object.values(value)
+    }
+
+    // Mapping the dynamic complex structured options required by StoneFactory.
     return Pipeline
       .create()
-      .send(this.#preparePassable(this.#passable))
-      .through(this.#pipes)
-      .then((v) => this.#prepareDestination(v))
+      .send(this.#passableResolver(passable))
+      .through(pipes)
+      .then((v) => v.options)
   }
 
   /**
-   * Prepare passable.
+   * Passable resolver.
+   * This resolver allow to convert and dee pmerge an array object to an object.
+   * We use it here to build the huge options object from different options modules
+   * defined in `config` folder.
    *
    * @param   {Object} passable
-   * @returns {Object}
+   * @param   {string} [key='optons']
+   * @returns {Function}
    */
-  #preparePassable (passable) {
-    return this.#passableResolver?.(passable) ?? passable
-  }
-
-  /**
-   * Prepare config destination.
-   *
-   * @param   {Object} passable
-   * @returns {Object}
-   */
-  #prepareDestination (passable) {
-    return this.#destinationResolver?.(passable) ?? passable
+  #passableResolver (passable, key = 'options') {
+    if (Array.isArray(passable[key])) {
+      passable[key] = passable[key].reduce((prev, option) => deepmerge(prev, option), {})
+    } else if (!passable[key]) {
+      passable[key] = {}
+    }
+    return passable
   }
 }
