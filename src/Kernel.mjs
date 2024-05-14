@@ -44,17 +44,11 @@ export class Kernel {
     this
       .#registerBaseBindings(options)
       .#registerErrorHandler()
-      .#makeProviders()
   }
 
   /** @return {Container} */
   get container () {
     return this.#container
-  }
-
-  /** @return {Router} */
-  get router () {
-    return this.#container.has('router') ? this.#container.router : null
   }
 
   /** @returns {boolean} */
@@ -101,7 +95,13 @@ export class Kernel {
    * Useful to initialize things at each events.
    */
   async beforeHandle () {
+    // Resolve providers
+    this.#resolveProviders()
+
+    // Call beforeHandle on providers
     for (const provider of this.#providers) { await provider.beforeHandle?.() }
+
+    // Register services in providers
     await this._onRegister()
   }
 
@@ -118,9 +118,9 @@ export class Kernel {
   }
 
   /**
-   * Hook that runs just before of just after returning the response.
+   * Hook that runs just before or just after returning the response.
    * Useful to make some cleanup.
-   * Invoke kernel, router and current route terminate middlewares.
+   * Invoke kernel and providers terminate middlewares.
    */
   async onTerminate () {
     for (const provider of this.#providers) { await provider.onTerminate?.() }
@@ -184,10 +184,12 @@ export class Kernel {
     this.#currentEvent = event
     this.#container.autoBinding(IncomingEvent, this.#currentEvent, true, ['event', 'request'])
 
-    if (this.router) {
-      return this.router.dispatch(this.#currentEvent)
+    // If App router is bound dispatch event to routes.
+    if (this.#container.has('router')) {
+      return this.#container.router.dispatch(this.#currentEvent)
     }
 
+    // If no routers are bound dispatch event to app handler.
     if (isFunction(this.#handler?.handle)) {
       return this.#handler.handle(this.#currentEvent)
     }
@@ -243,11 +245,13 @@ export class Kernel {
     return this
   }
 
-  #makeProviders () {
+  #resolveProviders () {
     this
       .#config
       .get('app.providers', [])
-      .forEach((Class) => this.#providers.add(this.#container.resolve(Class, true)))
+      .map((provider) => this.#container.resolve(provider, true))
+      .filter((provider) => !provider.mustSkip?.())
+      .forEach((provider) => this.#providers.add(provider))
 
     return this
   }
