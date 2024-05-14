@@ -10,8 +10,6 @@ import { Pipeline } from '@stone-js/pipeline'
  * @author Mr. Stone <evensstone@gmail.com>
  */
 export class ConfigBuilder {
-  #options
-
   /**
    * Create a ConfigBuilder.
    *
@@ -28,7 +26,7 @@ export class ConfigBuilder {
    * @param {Object} options
    */
   constructor (options) {
-    this.#options = options
+    this.options = options
   }
 
   /**
@@ -44,9 +42,9 @@ export class ConfigBuilder {
     const passable = {}
 
     // Determine if default pipes must be skipped or not.
-    const pipes = this.#options.autoload?.skipDefaultPipes
-      ? (this.#options.autoload?.pipes ?? [])
-      : defaultPipes.concat(this.#options.autoload?.pipes ?? [])
+    const pipes = this.options.autoload?.skipDefaultPipes
+      ? (this.options.autoload?.pipes ?? [])
+      : defaultPipes.concat(this.options.autoload?.pipes ?? [])
 
     // We group the imported modules by names.
     // We Convert their values from object to array.
