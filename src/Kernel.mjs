@@ -4,7 +4,7 @@ import { Pipeline } from '@stone-js/pipeline'
 import { EventEmitter } from './EventEmitter.mjs'
 import { ErrorHandler } from './ErrorHandler.mjs'
 import { Container } from '@stone-js/service-container'
-import { IncomingEvent, RuntimeError, isFunction, OutgoingResponse } from '@stone-js/common'
+import { IncomingEvent, isFunction, OutgoingResponse } from '@stone-js/common'
 
 /**
  * Class representing a Kernel.
@@ -263,17 +263,7 @@ export class Kernel {
 
   async #registerProviders () {
     for (const provider of this.#providers) {
-      // Skip register for app handler if not present.
-      // Register method is mandatory for providers except the app handler.
-      if (this.#handler === provider && !provider.register) {
-        continue
-      }
-
-      if (!provider.register) {
-        throw new RuntimeError(`This provider ${provider.constructor.name} must contain a register method`)
-      }
-
-      if (this.#registeredProviders.has(provider.constructor.name)) {
+      if (!provider.register || this.#registeredProviders.has(provider.constructor.name)) {
         continue
       }
 

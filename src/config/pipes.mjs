@@ -13,6 +13,7 @@ import { merge } from '@stone-js/common'
  * Handle Main config decorator.
  * Must be the first pipe, in the no config exists.
  * It will make the config file.
+ * This is the main initializer pipe and must have priotity 0.
  *
  * @param   {Passable} passable - Input data to transform via middleware.
  * @param   {Function} next - Pass to next middleware.
@@ -38,8 +39,8 @@ export const MainConfigPipe = (passable, next) => {
  * @returns {Passable}
  */
 export const AdapterPipe = (passable, next) => {
-  const module = passable.app.find(module => module.$$metadata$$?.adapters)
-  const adapters = module?.$$metadata$$?.adapters ?? []
+  const modules = passable.app.filter(module => module.$$metadata$$?.adapters?.length)
+  const adapters = modules.reduce((prev, module) => prev.concat(module.$$metadata$$.adapters), [])
   passable.options.adapters = adapters.concat(passable.options.adapters)
   return next(passable)
 }
@@ -115,11 +116,11 @@ export const MiddlewarePipe = (passable, next) => {
  * @returns {Function[]}
  */
 export const corePipes = [
-  MainConfigPipe,
-  AdapterPipe,
-  ProviderPipe,
-  ServicePipe,
-  ListenerPipe,
-  SubscriberPipe,
-  MiddlewarePipe
+  { pipe: MainConfigPipe, priority: 0 },
+  { pipe: AdapterPipe, priority: 0.5 },
+  { pipe: ProviderPipe, priority: 0.6 },
+  { pipe: ServicePipe, priority: 0.7 },
+  { pipe: ListenerPipe, priority: 0.7 },
+  { pipe: SubscriberPipe, priority: 0.7 },
+  { pipe: MiddlewarePipe, priority: 0.7 }
 ]

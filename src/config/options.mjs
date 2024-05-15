@@ -1,3 +1,4 @@
+import { corePipes } from './pipes.mjs'
 import { CoreServiceProvider } from '@stone-js/core'
 
 /**
@@ -6,6 +7,23 @@ import { CoreServiceProvider } from '@stone-js/core'
  * @returns {Object}
 */
 export const appOptions = {
+  // Options builder namespace.
+  builder: {
+
+    // Here you can define pipes to build the app options.
+    pipes: [
+      ...corePipes
+    ],
+
+    // By default build modules are passed to pipes as array
+    // Here you can specify what module to reduce and deep merge to object.
+    reduce: ['options'],
+
+    // Here you can define the default priority for pipes
+    // We be use when pipe does not have a priority.
+    defaultPipesPriority: 10
+  },
+
   // Adapters namespace.
   // Here you can define adapters settings.
   adapters: [],

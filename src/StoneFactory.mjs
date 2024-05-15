@@ -107,14 +107,9 @@ export class StoneFactory {
    * @returns {Adapter}
    */
   #findCurrentAdapter () {
-    return this
-      .#options
-      .adapters
-      ?.find((v) => this.#options.app.adapter.current === v.app.adapter.alias) ??
-      this
-        .#options
-        .adapters
-        ?.find((v) => v.app.adapter.default)
+    return this.#options.adapters?.find((v) => v.app.adapter.preferred) ??
+      this.#options.adapters?.find((v) => this.#options.app.adapter.current === v.app.adapter.alias) ??
+      this.#options.adapters?.find((v) => v.app.adapter.default)
   }
 
   /**

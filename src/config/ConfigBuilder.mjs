@@ -1,5 +1,5 @@
-import { merge } from '@stone-js/common'
 import { Pipeline } from '@stone-js/pipeline'
+import { isFunction, merge } from '@stone-js/common'
 
 /**
  * Class representing a ConfigBuilder.
@@ -9,10 +9,12 @@ import { Pipeline } from '@stone-js/pipeline'
  * @author Mr. Stone <evensstone@gmail.com>
  */
 export class ConfigBuilder {
+  #options
+
   /**
    * Create a ConfigBuilder.
    *
-   * @param   {Object} options
+   * @param   {Object} [options]
    * @returns {ConfigBuilder}
    */
   static create (options) {
@@ -22,14 +24,14 @@ export class ConfigBuilder {
   /**
    * Create a ConfigBuilder.
    *
-   * @param {Object} options
+   * @param {Object} [options]
    */
   constructor (options) {
-    this.options = options
+    this.#options = options
   }
 
   /**
-   * Build config
+   * Build config.
    *
    * @param   {Object} modules
    * @param   {Object} modules.app
@@ -40,23 +42,21 @@ export class ConfigBuilder {
   async build (modules) {
     const passable = {}
 
-    // Get pipes
-    // Usefull to build configs.
-    const pipes = this.options.autoload?.pipes ?? []
-    const defaultOptions = this.options.default ?? {}
-
     // We group the imported modules by names.
     // We Convert their values from object to array.
     for (const [name, value] of Object.entries(modules)) {
       passable[name] = Object.values(value)
     }
 
+    // Make builder options from modules if not exists.
+    this.#options = this.#makeOptions(passable)
+
     // Mapping the dynamic complex structured options required by StoneFactory.
     return Pipeline
       .create()
       .send(this.#passableResolver(passable))
-      .through(pipes)
-      .then((v) => merge(defaultOptions, v.options))
+      .through(this.#options.pipes)
+      .then((v) => v.options)
   }
 
   /**
@@ -70,7 +70,7 @@ export class ConfigBuilder {
    */
   #passableResolver (passable) {
     return []
-      .concat(this.options.autoload?.reduce ?? ['options'])
+      .concat(this.#options.reduce ?? ['options'])
       .reduce((modules, name) => {
         if (Array.isArray(modules[name])) {
           modules[name] = modules[name].reduce((prev, option) => merge(prev, option), {})
@@ -79,5 +79,29 @@ export class ConfigBuilder {
         }
         return modules
       }, passable)
+  }
+
+  /**
+   * Make builder options if not exists.
+   *
+   * @param   {Object} passable
+   * @returns {Object}
+   */
+  #makeOptions (passable) {
+    if (!this.#options) {
+      this.#options = Object
+        .values(passable)
+        .flatMap((modules) => modules)
+        .reduce((options, module) => {
+          return merge(options, module.builder ?? module.$$metadata$$?.builder ?? {})
+        }, { pipes: [], reduce: [] })
+    }
+
+    this.#options.pipes = this.#options.pipes
+      .map(pipe => isFunction(pipe) ? ({ pipe, priority: this.#options.defaultPipesPriority ?? 10 }) : pipe)
+      .sort((a, b) => a.priority - b.priority)
+      .map(v => v.pipe)
+
+    return this.#options
   }
 }
