@@ -20,8 +20,13 @@ import { merge } from '@stone-js/common'
  */
 export const MainConfigPipe = (passable, next) => {
   const module = passable.app.find(module => module.$$metadata$$?.mainHandler)
-  const options = module?.$$metadata$$?.mainHandler ?? {}
-  passable.options = merge(passable.options ?? {}, options)
+
+  if (module) {
+    const options = { ...module.$$metadata$$.mainHandler }
+    options.app.handler = module
+    passable.options = merge(passable.options ?? {}, options)
+  }
+
   return next(passable)
 }
 

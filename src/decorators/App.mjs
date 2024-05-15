@@ -31,7 +31,7 @@ export const App = (options = {}) => {
 
     const metadata = {
       provider: {},
-      mainHandler: merge(appOptions, { app: { ...options, handler: target } })
+      mainHandler: merge(appOptions, { app: options })
     }
 
     target.$$metadata$$ = merge(target.$$metadata$$ ?? {}, metadata)
