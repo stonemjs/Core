@@ -58,8 +58,7 @@
     "@stone-js/common": "^0.0.1",
     "@stone-js/config": "^0.0.1",
     "@stone-js/pipeline": "^0.0.1",
-    "@stone-js/service-container": "^0.0.1",
-    "deepmerge": "^4.3.1"
+    "@stone-js/service-container": "^0.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.24.5",

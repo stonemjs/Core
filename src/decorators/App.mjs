@@ -1,6 +1,5 @@
-import deepmerge from 'deepmerge'
 import { appOptions } from '@stone-js/core/config'
-import { classLevelDecoratorChecker } from '@stone-js/common'
+import { classLevelDecoratorChecker, merge } from '@stone-js/common'
 
 /**
  * Decorators, usefull for decorating classes.
@@ -32,10 +31,10 @@ export const App = (options = {}) => {
 
     const metadata = {
       provider: {},
-      mainHandler: deepmerge(appOptions, { app: { ...options, handler: target } })
+      mainHandler: merge(appOptions, { app: { ...options, handler: target } })
     }
 
-    target.$$metadata$$ = deepmerge(target.$$metadata$$ ?? {}, metadata)
+    target.$$metadata$$ = merge(target.$$metadata$$ ?? {}, metadata)
 
     return target
   }

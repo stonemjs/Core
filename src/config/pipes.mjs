@@ -1,4 +1,4 @@
-import deepmerge from 'deepmerge'
+import { merge } from '@stone-js/common'
 
 /**
  * Passable.
@@ -21,7 +21,7 @@ import deepmerge from 'deepmerge'
 export const MainConfigPipe = (passable, next) => {
   const module = passable.app.find(module => module.$$metadata$$?.mainHandler)
   const options = module?.$$metadata$$?.mainHandler ?? {}
-  passable.options = deepmerge(options, passable.options ?? {})
+  passable.options = merge(passable.options ?? {}, options)
   return next(passable)
 }
 
@@ -105,11 +105,11 @@ export const MiddlewarePipe = (passable, next) => {
 }
 
 /**
- * Export default pipes
+ * Export core pipes
  *
- * @returns {Array}
+ * @returns {Function[]}
  */
-export const defaultPipes = [
+export const corePipes = [
   MainConfigPipe,
   AdapterPipe,
   ProviderPipe,

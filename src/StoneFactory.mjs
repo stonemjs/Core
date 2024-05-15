@@ -1,6 +1,5 @@
-import deepmerge from 'deepmerge'
 import { Kernel } from './Kernel.mjs'
-import { isConstructor } from '@stone-js/common'
+import { isConstructor, merge } from '@stone-js/common'
 
 /**
  * Class representing StoneFactory.
@@ -92,7 +91,7 @@ export class StoneFactory {
 
       // Merge current adapter options with global
       // so adapter options can override globals.
-      const options = deepmerge(this.#options, current)
+      const options = merge(this.#options, current)
 
       // Create the adapter with a kernel factory
       // So adapter can create a new kernel instance a each request

@@ -1,5 +1,4 @@
-import deepmerge from 'deepmerge'
-import { classLevelDecoratorChecker } from '@stone-js/common'
+import { classLevelDecoratorChecker, merge } from '@stone-js/common'
 
 /**
  * Provider decorator to mark a class as a ServiceProvider
@@ -19,7 +18,7 @@ export const Provider = (options = {}) => {
       provider: { ...options }
     }
 
-    target.$$metadata$$ = deepmerge(target.$$metadata$$ ?? {}, metadata)
+    target.$$metadata$$ = merge(target.$$metadata$$ ?? {}, metadata)
 
     return target
   }

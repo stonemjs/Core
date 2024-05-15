@@ -1,5 +1,4 @@
-import deepmerge from 'deepmerge'
-import { defaultPipes } from './pipes.mjs'
+import { merge } from '@stone-js/common'
 import { Pipeline } from '@stone-js/pipeline'
 
 /**
@@ -41,10 +40,10 @@ export class ConfigBuilder {
   async build (modules) {
     const passable = {}
 
-    // Determine if default pipes must be skipped or not.
-    const pipes = this.options.autoload?.skipDefaultPipes
-      ? (this.options.autoload?.pipes ?? [])
-      : defaultPipes.concat(this.options.autoload?.pipes ?? [])
+    // Get pipes
+    // Usefull to build configs.
+    const pipes = this.options.autoload?.pipes ?? []
+    const defaultOptions = this.options.default ?? {}
 
     // We group the imported modules by names.
     // We Convert their values from object to array.
@@ -57,25 +56,28 @@ export class ConfigBuilder {
       .create()
       .send(this.#passableResolver(passable))
       .through(pipes)
-      .then((v) => v.options)
+      .then((v) => merge(defaultOptions, v.options))
   }
 
   /**
    * Passable resolver.
-   * This resolver allow to convert and dee pmerge an array object to an object.
+   * This resolver allow to convert and deep merge an array object to an object.
    * We use it here to build the huge options object from different options modules
    * defined in `config` folder.
    *
    * @param   {Object} passable
-   * @param   {string} [key='optons']
    * @returns {Function}
    */
-  #passableResolver (passable, key = 'options') {
-    if (Array.isArray(passable[key])) {
-      passable[key] = passable[key].reduce((prev, option) => deepmerge(prev, option), {})
-    } else if (!passable[key]) {
-      passable[key] = {}
-    }
-    return passable
+  #passableResolver (passable) {
+    return []
+      .concat(this.options.autoload?.reduce ?? ['options'])
+      .reduce((modules, name) => {
+        if (Array.isArray(modules[name])) {
+          modules[name] = modules[name].reduce((prev, option) => merge(prev, option), {})
+        } else if (!modules[name]) {
+          modules[name] = {}
+        }
+        return modules
+      }, passable)
   }
 }
