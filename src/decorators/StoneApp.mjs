@@ -28,7 +28,7 @@ import { classLevelDecoratorChecker, merge } from '@stone-js/common'
  * @param  {string} options.adapter.current - Define the current adapter.
  * @return {Function}
  */
-export const App = (options = {}) => {
+export const StoneApp = (options = {}) => {
   return (target) => {
     classLevelDecoratorChecker(target)
 
