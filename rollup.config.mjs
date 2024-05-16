@@ -11,6 +11,7 @@ const inputs = {
   decorators: 'src/decorators/*.mjs',
   index: [
     'src/Event.mjs',
+    'src/pipes/*.mjs',
     'src/ErrorHandler.mjs',
     'src/StoneFactory.mjs',
     'src/CoreServiceProvider.mjs',

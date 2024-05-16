@@ -1,5 +1,4 @@
-import { corePipes } from './pipes.mjs'
-import { CoreServiceProvider } from '@stone-js/core'
+import { CoreServiceProvider, corePipes } from '@stone-js/core'
 
 /**
  * Stone main options.
