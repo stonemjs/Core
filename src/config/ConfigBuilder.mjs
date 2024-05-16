@@ -1,5 +1,5 @@
+import { merge } from '@stone-js/common'
 import { Pipeline } from '@stone-js/pipeline'
-import { isFunction, merge } from '@stone-js/common'
 
 /**
  * Class representing a ConfigBuilder.
@@ -54,6 +54,7 @@ export class ConfigBuilder {
     // Mapping the dynamic complex structured options required by StoneFactory.
     return Pipeline
       .create()
+      .defaultPriority(this.#options.defaultPipesPriority)
       .send(this.#passableResolver(passable))
       .through(this.#options.pipes)
       .then((v) => v.options)
@@ -96,11 +97,6 @@ export class ConfigBuilder {
           return merge(options, module.builder ?? module.$$metadata$$?.builder ?? {})
         }, { pipes: [], reduce: [] })
     }
-
-    this.#options.pipes = this.#options.pipes
-      .map(pipe => isFunction(pipe) ? ({ pipe, priority: this.#options.defaultPipesPriority ?? 10 }) : pipe)
-      .sort((a, b) => a.priority - b.priority)
-      .map(v => v.pipe)
 
     return this.#options
   }
