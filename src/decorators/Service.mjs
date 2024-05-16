@@ -1,7 +1,7 @@
 import { classLevelDecoratorChecker, merge } from '@stone-js/common'
 
 /**
- * Decorators, usefull for decorating classes.
+ * Decorators, Useful for decorating classes.
  *
  * @author Mr. Stone <evensstone@gmail.com>
  *

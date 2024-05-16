@@ -115,7 +115,7 @@ export class StoneFactory {
   /**
    * Call onInit hook on all service providers.
    * OnInit is called once and just after the application runs.
-   * Usefull to setup once.
+   * Useful to setup once.
    *
    * @returns
    */
