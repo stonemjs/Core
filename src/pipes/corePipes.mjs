@@ -107,6 +107,30 @@ export const SubscriberPipe = (passable, next) => {
 export const MiddlewarePipe = (passable, next) => {
   const modules = passable.app.filter(module => module.$$metadata$$?.middleware)
   passable.options.app.services = modules.concat(passable.options.app.services)
+
+  modules.forEach(middleware => {
+    const { layer, type, platform, priority = 10 } = middleware.$$metadata$$.middleware
+    const kernelType = type === 'input' ? 'event' : (type === 'output' ? 'response' : 'terminate')
+
+    switch (layer) {
+      case 'kernel':
+        passable.options.app?.kernel.middleware[kernelType].push({ pipe: middleware, priority })
+        break
+      case 'adapter':
+        passable.options.adapters.forEach(adapterOptions => {
+          if (platform !== adapterOptions.app.adapter.alias) { return }
+          type === 'input'
+            ? adapterOptions.app?.mapper.input.middleware.push({ pipe: middleware, priority })
+            : adapterOptions.app?.mapper.output.middleware.push({ pipe: middleware, priority })
+        })
+        break
+      case 'router':
+        passable.options.router ??= { middleware: [] }
+        passable.options.router?.middleware.push({ pipe: middleware, priority })
+        break
+    }
+  })
+
   return next(passable)
 }
 
@@ -122,5 +146,5 @@ export const corePipes = [
   { pipe: ServicePipe, priority: 0.7 },
   { pipe: ListenerPipe, priority: 0.7 },
   { pipe: SubscriberPipe, priority: 0.7 },
-  { pipe: MiddlewarePipe, priority: 0.7 }
+  { pipe: MiddlewarePipe, priority: 3 }
 ]

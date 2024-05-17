@@ -8,9 +8,10 @@ import { classLevelDecoratorChecker, merge } from '@stone-js/common'
  * @memberOf Decorators
  * @param  {Object} options
  * @param  {string} options.platform - Platform name.
+ * @param  {number} options.priority - Execution priority.
  * @param  {boolean} options.singleton - Register as singleton in container.
  * @param  {(string|string[])} options.alias - Alias name and must be unique all over the app.
- * @param  {('adapter', 'kernel', 'router')} options.context - Execution context.
+ * @param  {('adapter', 'kernel', 'router')} options.layer - Execution layer.
  * @param  {('input', 'output', 'terminate')} options.type - Type determine the middleware's purpose.
  * @return {Function}
  */

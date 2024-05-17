@@ -126,7 +126,7 @@ export class Kernel {
     for (const provider of this.#providers) { await provider.onTerminate?.() }
     await Pipeline
       .create(this.#container)
-      .send(this.#currentEvent, this.#currentResponse)
+      .send({ event: this.#currentEvent, response: this.#currentResponse })
       .through(this.terminateMiddleware)
       .thenReturn()
   }
@@ -167,9 +167,9 @@ export class Kernel {
   async _sendEventThroughDestination (event) {
     this.#currentResponse = await Pipeline
       .create(this.#container)
-      .send(event)
+      .send({ event })
       .through(this.eventMiddleware)
-      .then(v => this._prepareDestination(v))
+      .then((v) => this._prepareDestination(v.event))
   }
 
   /**
@@ -218,9 +218,9 @@ export class Kernel {
 
     this.#currentResponse = await Pipeline
       .create(this.#container)
-      .send(event, this.#currentResponse)
+      .send({ event, response: this.#currentResponse })
       .through(this.responseMiddleware)
-      .then((_, response) => response)
+      .then(({ response }) => response)
 
     this.#eventEmitter.emit(Event.EVENT_HANDLED, this, { event, response: this.#currentResponse })
 
