@@ -25,7 +25,7 @@ export const MainConfigPipe = (passable, next) => {
   if (module) {
     const options = { ...module.$$metadata$$.mainHandler }
     options.app.handler = module
-    passable.options = merge(passable.options ?? {}, options)
+    passable.options = merge(options, passable.options ?? {})
   }
 
   return next(passable)

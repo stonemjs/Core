@@ -1,4 +1,4 @@
-import { isConstructor } from '@stone-js/common'
+import { isConstructor, isPlainObject } from '@stone-js/common'
 
 /**
  * Class representing a CoreServiceProvider.
@@ -63,12 +63,22 @@ export class CoreServiceProvider {
     this.#bootSubscribers()
   }
 
+  /**
+   * Register decorated and imported services.
+   *
+   * @returns {this}
+   */
   #registerServices () {
-    this.#container.register(this.#services.filter(v => !!v.$$metadata$$?.service))
-    this.#services.filter(v => !v.$$metadata$$?.service).forEach(service => this.#container.autoBinding(service, service, true))
+    this.#container.register(this.#services.filter(v => !!v.$$metadata$$?.service)) // Register decorated services.
+    this.#services.filter(v => !v.$$metadata$$?.service).forEach(service => this.#container.autoBinding(service, service, true)) // Register imported services.
     return this
   }
 
+  /**
+   * Register aliases.
+   *
+   * @returns {this}
+   */
   #registerAlias () {
     Object
       .entries(this.#aliases)
@@ -77,6 +87,11 @@ export class CoreServiceProvider {
     return this
   }
 
+  /**
+   * Register adapter's mappers.
+   *
+   * @returns {this}
+   */
   #registerMappers () {
     if (this.#config.get('app.mapper.input.type')) {
       const Mapper = this.#config.get('app.mapper.input.type')
@@ -97,17 +112,38 @@ export class CoreServiceProvider {
     return this
   }
 
+  /**
+   * Register decorated and imported listeners.
+   *
+   * @returns {this}
+   */
   #registerListeners () {
-    this.#listeners
-      .forEach((listener) => {
-        if (listener.$$metadata$$?.listener.event) {
-          this.#eventEmitter.on(listener.$$metadata$$.listener.event, (e) => this.#container.resolve(listener, true).handle(e))
-        }
-      })
+    if (isPlainObject(this.#listeners)) { // Register imported listeners.
+      Object
+        .entries(this.#listeners)
+        .forEach(([event, listeners]) => {
+          listeners.forEach(listener => {
+            this.#eventEmitter.on(event, (e) => this.#container.resolve(listener, true).handle(e))
+          })
+        })
+    } else if (Array.isArray(this.#listeners)) { // Register decorated listeners.
+      this
+        .#listeners
+        .forEach((listener) => {
+          if (listener.$$metadata$$?.listener.event) {
+            this.#eventEmitter.on(listener.$$metadata$$.listener.event, (e) => this.#container.resolve(listener, true).handle(e))
+          }
+        })
+    }
 
     return this
   }
 
+  /**
+   * Bootstrap subscribers.
+   *
+   * @returns {this}
+   */
   #bootSubscribers () {
     this.#subscribers.forEach((subscriber) => this.#container.resolve(subscriber, true).subscribe(this.#eventEmitter))
     return this
