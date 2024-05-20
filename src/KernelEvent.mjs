@@ -1,4 +1,4 @@
-import { CustomEvent } from '@stone-js/common'
+import { CustomEvent } from './CustomEvent.mjs'
 
 /**
  * Class representing a kernel Event.
@@ -7,7 +7,7 @@ import { CustomEvent } from '@stone-js/common'
  *
  * @extends CustomEvent
  */
-export class Event extends CustomEvent {
+export class KernelEvent extends CustomEvent {
   /**
    * EVENT_HANDLED Event name, fires when event was intercepted by kernel.
    *

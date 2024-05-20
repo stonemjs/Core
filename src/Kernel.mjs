@@ -1,7 +1,7 @@
-import { Event } from './Event.mjs'
 import { Config } from '@stone-js/config'
 import { Pipeline } from '@stone-js/pipeline'
 import { isFunction } from '@stone-js/common'
+import { KernelEvent } from './KernelEvent.mjs'
 import { EventEmitter } from './EventEmitter.mjs'
 import { ErrorHandler } from './ErrorHandler.mjs'
 import { Container } from '@stone-js/service-container'
@@ -213,9 +213,9 @@ export class Kernel {
     }
 
     this.#container.autoBinding(OutgoingResponse, this.#currentResponse, true, ['response'])
-    this.#eventEmitter.emit(Event.PREPARING_RESPONSE, new Event(Event.PREPARING_RESPONSE, this, { event, response: this.#currentResponse }))
+    this.#eventEmitter.emit(KernelEvent.PREPARING_RESPONSE, new KernelEvent(KernelEvent.PREPARING_RESPONSE, this, { event, response: this.#currentResponse }))
     this.#currentResponse = await this.#currentResponse.prepare(event, this.#config)
-    this.#eventEmitter.emit(Event.RESPONSE_PREPARED, new Event(Event.RESPONSE_PREPARED, this, { event, response: this.#currentResponse }))
+    this.#eventEmitter.emit(KernelEvent.RESPONSE_PREPARED, new KernelEvent(KernelEvent.RESPONSE_PREPARED, this, { event, response: this.#currentResponse }))
 
     this.#currentResponse = await Pipeline
       .create(this.#container)
@@ -223,7 +223,7 @@ export class Kernel {
       .through(this.responseMiddleware)
       .then(({ response }) => response)
 
-    this.#eventEmitter.emit(Event.EVENT_HANDLED, this, { event, response: this.#currentResponse })
+    this.#eventEmitter.emit(KernelEvent.EVENT_HANDLED, this, { event, response: this.#currentResponse })
 
     return this.#currentResponse
   }

@@ -80,33 +80,33 @@ export class StoneFactory {
   #makeAdapter () {
     // Get current adapter options
     // or the default one if there is no current.
-    const current = this.#findCurrentAdapter()
+    const currentOptions = this.#findCurrentAdapterOptions()
 
     // Get the Adapter class.
-    const Adapter = current?.app?.adapter?.type
+    const CurrentAdapter = currentOptions?.app?.adapter?.type
 
-    if (isConstructor(Adapter)) {
-      // Call onInit once for all providers.
-      this.#onInit()
+    if (isConstructor(CurrentAdapter)) {
+      // Subscribe providers to onInit hook.
+      this.#subscribeProvidersToOnInit()
 
       // Merge current adapter options with global
       // so adapter options can override globals.
-      const options = merge(this.#options, current)
+      const options = merge(this.#options, currentOptions)
 
       // Create the adapter with a kernel factory
       // So adapter can create a new kernel instance a each request
-      return Adapter.create(() => Kernel.create(options), options.app.adapter)
+      return CurrentAdapter.create(() => Kernel.create(options), options.app.adapter)
     }
 
     console.error('No adapters provided. Stone.js needs at least one adapter to run.')
   }
 
   /**
-   * Find current adapter.
+   * Find current adapter options.
    *
-   * @returns {Adapter}
+   * @returns {Object}
    */
-  #findCurrentAdapter () {
+  #findCurrentAdapterOptions () {
     return this.#options.adapters?.find((v) => v.app.adapter.preferred) ??
       this.#options.adapters?.find((v) => this.#options.app.adapter.current === v.app.adapter.alias) ??
       this.#options.adapters?.find((v) => v.app.adapter.default)
@@ -119,7 +119,7 @@ export class StoneFactory {
    *
    * @returns
    */
-  #onInit () {
+  #subscribeProvidersToOnInit () {
     this
       .#options
       .app

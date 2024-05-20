@@ -10,10 +10,13 @@ const inputs = {
   config: 'src/config/*.mjs',
   decorators: 'src/decorators/*.mjs',
   index: [
-    'src/Event.mjs',
     'src/pipes/*.mjs',
+    'src/Adapter.mjs',
+    'src/CustomEvent.mjs',
+    'src/KernelEvent.mjs',
     'src/ErrorHandler.mjs',
     'src/StoneFactory.mjs',
+    'src/AdapterMapper.mjs',
     'src/CoreServiceProvider.mjs',
   ],
 }
