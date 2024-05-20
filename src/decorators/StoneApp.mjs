@@ -15,17 +15,17 @@ import { classLevelDecoratorChecker, merge } from '@stone-js/common'
  * @author Mr. Stone <evensstone@gmail.com>
  *
  * @memberOf Decorators
- * @param  {Object} options - The decorator configuration options.
- * @param  {string} options.name - Application name.
- * @param  {string} options.env - Application env.
- * @param  {string} options.debug - Application debug.
- * @param  {string} options.timezone - Define the timezone.
- * @param  {string} options.locale - Application locale.
- * @param  {string} options.fallback_locale - Application fallback_locale.
- * @param  {(Function[]|Object[])} options.builder.pipes - Pipes for config builder.
- * @param  {string[]} options.builder.reduce - Modules du reduce and deep merge to object.
- * @param  {number} options.builder.defaultPipesPriority - Default priority for all pipes.
- * @param  {string} options.adapter.current - Define the current adapter.
+ * @param  {Object} [options] - The decorator configuration options.
+ * @param  {string} [options.name] - Application name.
+ * @param  {string} [options.env] - Application env.
+ * @param  {string} [options.debug] - Application debug.
+ * @param  {string} [options.timezone] - Define the timezone.
+ * @param  {string} [options.locale] - Application locale.
+ * @param  {string} [options.fallback_locale] - Application fallback_locale.
+ * @param  {(Function[]|Object[])} [options.builder.pipes] - Pipes for config builder.
+ * @param  {string[]} [options.builder.reduce] - Modules du reduce and deep merge to object.
+ * @param  {number} [options.builder.defaultPipesPriority] - Default priority for all pipes.
+ * @param  {string} [options.adapter.current] - Define the current adapter.
  * @return {Function}
  */
 export const StoneApp = (options = {}) => {

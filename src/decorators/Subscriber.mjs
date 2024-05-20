@@ -6,7 +6,7 @@ import { classLevelDecoratorChecker, merge } from '@stone-js/common'
  * @author Mr. Stone <evensstone@gmail.com>
  *
  * @memberOf Decorators
- * @param  {Object} options - The decorator configuration options.
+ * @param  {Object} [options] - The decorator configuration options.
  * @return {Function}
  */
 export const Subscriber = (options = {}) => {
