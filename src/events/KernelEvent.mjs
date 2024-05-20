@@ -1,13 +1,13 @@
-import { CustomEvent } from './CustomEvent.mjs'
+import { Event } from './Event.mjs'
 
 /**
  * Class representing a kernel Event.
  *
  * @author Mr. Stone <evensstone@gmail.com>
  *
- * @extends CustomEvent
+ * @extends Event
  */
-export class KernelEvent extends CustomEvent {
+export class KernelEvent extends Event {
   /**
    * EVENT_HANDLED Event name, fires when event was intercepted by kernel.
    *

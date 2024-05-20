@@ -11,13 +11,12 @@ const inputs = {
   decorators: 'src/decorators/*.mjs',
   index: [
     'src/pipes/*.mjs',
-    'src/Adapter.mjs',
-    'src/CustomEvent.mjs',
-    'src/KernelEvent.mjs',
+    'src/events/*.mjs',
+    'src/adapter/*.mjs',
     'src/ErrorHandler.mjs',
     'src/StoneFactory.mjs',
-    'src/AdapterMapper.mjs',
     'src/CoreServiceProvider.mjs',
+    '!src/events/EventEmitter.mjs'
   ],
 }
 

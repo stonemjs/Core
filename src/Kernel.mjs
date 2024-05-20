@@ -1,11 +1,10 @@
 import { Config } from '@stone-js/config'
 import { Pipeline } from '@stone-js/pipeline'
 import { isFunction } from '@stone-js/common'
-import { KernelEvent } from './KernelEvent.mjs'
-import { EventEmitter } from './EventEmitter.mjs'
 import { ErrorHandler } from './ErrorHandler.mjs'
+import { KernelEvent } from './events/KernelEvent.mjs'
 import { Container } from '@stone-js/service-container'
-import { IncomingEvent, OutgoingResponse } from '@stone-js/event-foundation'
+import { EventEmitter } from './events/EventEmitter.mjs'
 
 /**
  * Class representing a Kernel.
@@ -109,8 +108,8 @@ export class Kernel {
   /**
    * Handle IncomingEvent.
    *
-   * @param   {(IncomingEvent|IncomingHttpEvent)} event
-   * @returns {(OutgoingResponse|OutgoingHttpResponse)}
+   * @param   {IncomingEvent} event
+   * @returns {OutgoingResponse}
    */
   async handle (event) {
     await this._onBootstrap(event)
@@ -183,7 +182,8 @@ export class Kernel {
    */
   async _prepareDestination (event) {
     this.#currentEvent = event
-    this.#container.autoBinding(IncomingEvent, this.#currentEvent, true, ['event', 'request'])
+    this.#container.instance('event', this.#currentEvent)
+    this.#container.instance('request', this.#currentEvent)
 
     // If App router is bound dispatch event to routes.
     if (this.#container.has('router')) {
@@ -203,16 +203,16 @@ export class Kernel {
    *
    * @protected
    * @param   {IncomingEvent} event
-   * @returns {(OutgoingResponse|OutgoingHttpResponse)}
+   * @returns {OutgoingResponse}
    */
   async _prepareResponse (event) {
     if (!this.#currentResponse) return
 
-    if (!(this.#currentResponse instanceof OutgoingResponse)) {
+    if (!this.#currentResponse.prepare) {
       throw new TypeError('Return response must be an instance of `OutgoingResponse` or a subclass of it.')
     }
 
-    this.#container.autoBinding(OutgoingResponse, this.#currentResponse, true, ['response'])
+    this.#container.instance('response', this.#currentResponse)
     this.#eventEmitter.emit(KernelEvent.PREPARING_RESPONSE, new KernelEvent(KernelEvent.PREPARING_RESPONSE, this, { event, response: this.#currentResponse }))
     this.#currentResponse = await this.#currentResponse.prepare(event, this.#config)
     this.#eventEmitter.emit(KernelEvent.RESPONSE_PREPARED, new KernelEvent(KernelEvent.RESPONSE_PREPARED, this, { event, response: this.#currentResponse }))
