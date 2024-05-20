@@ -1,13 +1,13 @@
-import { AbstractEvent } from '@stone-js/common'
+import { CustomEvent } from '@stone-js/common'
 
 /**
  * Class representing a kernel Event.
  *
  * @author Mr. Stone <evensstone@gmail.com>
  *
- * @extends AbstractEvent
+ * @extends CustomEvent
  */
-export class Event extends AbstractEvent {
+export class Event extends CustomEvent {
   /**
    * EVENT_HANDLED Event name, fires when event was intercepted by kernel.
    *

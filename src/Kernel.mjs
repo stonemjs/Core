@@ -1,10 +1,11 @@
 import { Event } from './Event.mjs'
 import { Config } from '@stone-js/config'
 import { Pipeline } from '@stone-js/pipeline'
+import { isFunction } from '@stone-js/common'
 import { EventEmitter } from './EventEmitter.mjs'
 import { ErrorHandler } from './ErrorHandler.mjs'
 import { Container } from '@stone-js/service-container'
-import { IncomingEvent, isFunction, OutgoingResponse } from '@stone-js/common'
+import { IncomingEvent, OutgoingResponse } from '@stone-js/event-foundation'
 
 /**
  * Class representing a Kernel.
