@@ -30,7 +30,7 @@ export default Object.entries(inputs).map(([name, input]) => ({
     multi(),
     nodePolyfills({ include: ['events'], sourceMap: true }),
     nodeExternals({
-      include: [/^[@stone-js/core]/]
+      include: [/^@stone-js\/core/]
     }), // Must always be before `nodeResolve()`.
     nodeResolve({
       exportConditions: ['node', 'import', 'require', 'default']
